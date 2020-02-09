@@ -27,6 +27,16 @@ run {
 
 mainClassName = 'com.netflix.spinnaker.orca.Main'
 
+repositories {
+  maven {
+    url codingArtifactsRepoUrl
+    credentials {
+      username = codingArtifactsGradleUsername
+      password = codingArtifactsGradlePassword
+    }
+  }
+}
+
 dependencies {
   implementation("org.springframework.boot:spring-boot-starter-web")
   implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -62,7 +72,8 @@ dependencies {
   implementation("com.netflix.spinnaker.kork:kork-web")
   implementation("com.netflix.spinnaker.kork:kork-plugins")
   implementation("net.logstash.logback:logstash-logback-encoder")
-  implementation("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
+  //implementation("com.netflix.spinnaker.fiat:fiat-api:$fiatVersion")
+  implementation "com.coding.spinnaker.fiat:fiat-api:$fiatFixVersion"
   implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
 
   if (!rootProject.hasProperty("excludeSqlDrivers")) {
