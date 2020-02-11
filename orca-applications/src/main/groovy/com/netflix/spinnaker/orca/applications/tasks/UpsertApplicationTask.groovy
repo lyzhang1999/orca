@@ -59,7 +59,10 @@ class UpsertApplicationTask extends AbstractFront50Task implements ApplicationNa
     }
 
     if (application.permission?.permissions != null) {
-      front50Service.updatePermission(application.name, application.permission)
+      def result = front50Service.updatePermission(application.name, application.permission)
+      log.info("Creating application permission is {}",result)
+      def checkPermission = front50Service.getPermission(application.name)
+      log.info("Creating application permission is {}",checkPermission.toString())
     }
 
     outputs.newState = application ?: [:]
