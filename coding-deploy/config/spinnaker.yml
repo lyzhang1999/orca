@@ -6,8 +6,8 @@ services:
   clouddriver:
     host: 0.0.0.0
     port: 7002
-    baseUrl: ${spin.clouddriver.baseUrl:http://spin-clouddriver.spinnaker:7002}
-    enabled: true
+    baseUrl: ${spin_clouddriver_baseUrl:http://spin-clouddriver.spinnaker:7002}
+    enabled: ${spin_clouddriver_enabled:true}
   clouddriverCaching:
     host: 0.0.0.0
     port: 7002
@@ -31,13 +31,13 @@ services:
   deck:
     host: 0.0.0.0
     port: 9000
-    baseUrl: ${spin.deck.baseUrl:http://localhost:9000}
-    enabled: true
+    baseUrl: ${spin_deck_baseUrl:http://localhost:9000}
+    enabled: ${spin_deck_enabled:true}
   echo:
     host: 0.0.0.0
     port: 8089
-    baseUrl: ${spin.echo.baseUrl:http://spin-echo.spinnaker:8089}
-    enabled: true
+    baseUrl: ${spin_echo_baseUrl:http://spin-echo.spinnaker:8089}
+    enabled: ${spin_echo_enabled:true}
   echoScheduler:
     host: 0.0.0.0
     port: 8089
@@ -51,43 +51,43 @@ services:
   fiat:
     host: 0.0.0.0
     port: 7003
-    baseUrl: ${spin.fiat.baseUrl:http://spin-fiat.spinnaker:7003}
-    enabled: true
+    baseUrl: ${spin_fiat_baseUrl:http://spin-fiat.spinnaker:7003}
+    enabled: ${spin_fiat_enabled:true}
   front50:
     host: 0.0.0.0
     port: 8080
-    baseUrl: ${spin.front50.baseUrl:http://spin-front50.spinnaker:8080}
-    enabled: true
+    baseUrl: ${spin_front50_baseUrl:http://spin-front50.spinnaker:8080}
+    enabled: ${spin_front50_enabled:true}
   gate:
     host: 0.0.0.0
     port: 8084
-    baseUrl: ${spin.gate.baseUrl:http://localhost:8084}
-    enabled: true
+    baseUrl: ${spin_gate_baseUrl:http://localhost:8084}
+    enabled: ${spin_gate_enabled:true}
   igor:
     host: 0.0.0.0
     port: 8088
-    baseUrl: http://spin-igor.spinnaker:8088
-    enabled: false
+    baseUrl: ${spin_igor_baseUrl:http://spin-igor.spinnaker:8088}
+    enabled: ${spin_igor_enabled:true}
   kayenta:
     host: 0.0.0.0
     port: 8090
-    baseUrl: ${spin.kayenta.baseUrl:http://spin-kayenta.spinnaker:8090}
-    enabled: true
+    baseUrl: ${spin_kayenta_baseUrl:http://spin-kayenta.spinnaker:8090}
+    enabled: ${spin_kayenta_enabled:false}
   orca:
     host: 0.0.0.0
     port: 8083
-    baseUrl: ${spin.orca.baseUrl:http://spin-orca.spinnaker:8083}
-    enabled: true
+    baseUrl: ${spin_orca_baseUrl:http://spin-orca.spinnaker:8083}
+    enabled: ${spin_orca_enabled:true}
   redis:
     host: 0.0.0.0
     port: 6379
-    baseUrl: ${spin.redis.baseUrl:redis://spin-redis.spinnaker:6379}
+    baseUrl: ${spin_redis_baseUrl:redis://spin-redis.spinnaker:6379}
     enabled: true
   rosco:
     host: 0.0.0.0
     port: 8087
-    baseUrl: ${spin.rosco.baseUrl:http://spin-rosco.spinnaker:8087}
-    enabled: true
+    baseUrl: ${spin_rosco_baseUrl:http://spin-rosco.spinnaker:8087}
+    enabled: ${spin_rosco_enabled:true}
   monitoringDaemon:
     host: 0.0.0.0
     port: 8008
