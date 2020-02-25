@@ -142,6 +142,7 @@ public class SaveServiceAccountTask implements RetryableTask {
     Response response = front50Service.saveServiceAccount(svcAcct);
 
     if (response.getStatus() != HttpStatus.OK.value()) {
+      log.info("front50 save serviceaccount retuen {}", response.getStatus());
       return TaskResult.ofStatus(ExecutionStatus.TERMINAL);
     }
 
