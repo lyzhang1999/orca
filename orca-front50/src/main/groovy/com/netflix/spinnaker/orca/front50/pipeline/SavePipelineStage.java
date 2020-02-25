@@ -32,6 +32,7 @@ public class SavePipelineStage implements StageDefinitionBuilder {
   @Override
   public void taskGraph(Stage stage, Builder builder) {
     if (useManagedServiceAccounts) {
+      System.out.print("--------- run as useManagedServiceAccounts ---------");
       builder.withTask("updatePipelinePermissions", SaveServiceAccountTask.class);
     }
 

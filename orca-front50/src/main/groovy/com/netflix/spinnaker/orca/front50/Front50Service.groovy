@@ -48,6 +48,9 @@ interface Front50Service {
   @PUT("/permissions/applications/{applicationName}")
   Response updatePermission(@Path("applicationName") String applicationName, @Body Application.Permission permission)
 
+  @GET("/permissions/applications/{applicationName}")
+  Map<String, Object> getPermission(@Path("applicationName") String applicationName)
+
   @GET("/pipelines/{applicationName}")
   List<Map<String, Object>> getPipelines(@Path("applicationName") String applicationName)
 
