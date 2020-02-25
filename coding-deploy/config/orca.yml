@@ -63,3 +63,31 @@ integrations:
 pipelineTemplates.enabled: false
 pipelineTemplate.enabled: false
 plugins: {}
+
+sql:
+  enabled: true
+  connectionPool:
+    jdbcUrl: ${sql_jdbcUrl:jdbc:mysql://mysql-service:3306/orca}
+    user: ${sql_user:orca_service}
+    password: ${sql_password:coding123}
+    connectionTimeout: 5000
+    maxLifetime: 30000
+    maxPoolSize: 50
+  migration:
+    jdbcUrl: ${sql_migration_jdbcUrl:jdbc:mysql://mysql-service:3306/orca}
+    user: ${sql_migration_user:orca_migrate}
+    password: ${sql_migration_passwrd:coding123}
+
+# Ensure we're only using SQL for accessing execution state
+executionRepository:
+  sql:
+    enabled: true
+  redis:
+    enabled: false
+
+# Reporting on active execution metrics will be handled by SQL
+monitor:
+  activeExecutions:
+    redis: false
+
+
