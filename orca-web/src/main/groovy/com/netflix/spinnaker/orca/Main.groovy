@@ -66,6 +66,7 @@ import org.springframework.scheduling.annotation.EnableAsync
   OrcaConfiguration,
   RedisConfiguration,
   BakeryConfiguration,
+  com.netflix.spinnaker.orca.bakery.config.CloudDriverConfiguration,
   EchoConfiguration,
   Front50Configuration,
   FlexConfiguration,

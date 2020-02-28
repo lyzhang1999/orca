@@ -44,6 +44,8 @@ class BakeRequest {
                                          baseLabel: "release",
                                          baseOs: "ubuntu")
 
+  String pipeline
+  String packerConfig
   String user
   @JsonProperty("package") String packageName
   List<Artifact> packageArtifacts
