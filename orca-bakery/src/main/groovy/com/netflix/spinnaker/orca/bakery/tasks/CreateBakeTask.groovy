@@ -37,6 +37,7 @@ import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowire
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -56,6 +57,12 @@ class CreateBakeTask implements RetryableTask {
   @Autowired(required = false)
   BakerySelector bakerySelector
 
+  @Autowired
+  ObjectMapper objectMapper;
+
+  @Autowired
+  JsonManifestEvaluator jsonManifestEvaluator
+
   @Autowired ObjectMapper mapper
 
   @Autowired(required = false)
@@ -67,6 +74,9 @@ class CreateBakeTask implements RetryableTask {
 
   @Override
   TaskResult execute(Stage stage) {
+    BakeContext context = objectMapper.convertValue(stage.context, BakeContext.class);
+    //BakeContext context = stage.mapTo(BakeContext.class);
+    log.info("context: ${context}")
     if (!bakerySelector) {
       throw new UnsupportedOperationException("You have not enabled baking for this orca instance. Set bakery.enabled: true")
     }
@@ -90,9 +100,13 @@ class CreateBakeTask implements RetryableTask {
     }
 
     try {
+
+      log.info("create bake task evalueated context,$context");
+      log.info("create bake task evalueated stage,$stage");
+      String packerConfig = jsonManifestEvaluator.evaluate(stage,context);
       // If the user has specified a base OS that is unrecognized by Rosco, this method will
       // throw a Retrofit exception (HTTP 404 Not Found)
-      def bake = bakeFromContext(stage, bakery)
+      def bake = bakeFromContext(stage, bakery, packerConfig)
       String rebake = shouldRebake(stage) ? "1" : null
       def bakeStatus = bakery.service.createBake(stage.context.region as String, bake, rebake).toBlocking().single()
 
@@ -145,7 +159,7 @@ class CreateBakeTask implements RetryableTask {
   }
 
   @CompileDynamic
-  private BakeRequest bakeFromContext(Stage stage, SelectedService<BakeryService> bakery) {
+  private BakeRequest bakeFromContext(Stage stage, SelectedService<BakeryService> bakery, String packerConfig) {
     PackageType packageType
     if (bakery.config.roscoApisEnabled) {
       def baseImage = bakery.service.getBaseImage(stage.context.cloudProviderType as String,
@@ -167,6 +181,9 @@ class CreateBakeTask implements RetryableTask {
 
     Map requestMap = packageInfo.findTargetPackage(bakery.config.allowMissingPackageInstallation as Boolean)
 
+    def pipeline = stage.execution.pipelineConfigId
+    requestMap.pipeline = pipeline;
+
     // if the field "packageArtifactIds" is present in the context, because it was set in the UI,
     // this will resolve those ids into real artifacts and then put them in List<Artifact> packageArtifacts
     requestMap.packageArtifacts = stage.context.packageArtifactIds.collect { String artifactId ->
@@ -183,6 +200,7 @@ class CreateBakeTask implements RetryableTask {
       requestMap.remove("baseName")
     }
 
+    requestMap.packerConfig = packerConfig;
     def request = mapper.convertValue(requestMap, BakeRequest)
     if (!bakery.config.roscoApisEnabled) {
       request.other().clear()
