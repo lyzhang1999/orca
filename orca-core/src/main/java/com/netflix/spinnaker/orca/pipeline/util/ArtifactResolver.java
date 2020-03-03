@@ -334,6 +334,9 @@ public class ArtifactResolver {
     if (expectedArtifact.getBoundArtifact() != null) {
       return expectedArtifact.getBoundArtifact();
     }
+    expectedArtifact
+        .getMatchArtifact()
+        .setType(".*" + expectedArtifact.getMatchArtifact().getType());
     List<Artifact> matches =
         possibleMatches.stream().filter(expectedArtifact::matches).collect(toList());
     Artifact result;
