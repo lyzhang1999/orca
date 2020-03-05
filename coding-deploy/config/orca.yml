@@ -67,15 +67,15 @@ plugins: {}
 sql:
   enabled: true
   connectionPool:
-    jdbcUrl: ${sql_jdbcUrl:jdbc:mysql://mysql-service:3306/orca}
-    user: ${sql_user:orca_service}
+    jdbcUrl: ${sql_jdbcUrl:jdbc:mysql://mysql-service:3306/orca?characterEncoding=UTF-8}
+    user: ${sql_user:coding}
     password: ${sql_password:coding123}
     connectionTimeout: 5000
     maxLifetime: 30000
     maxPoolSize: 50
   migration:
-    jdbcUrl: ${sql_migration_jdbcUrl:jdbc:mysql://mysql-service:3306/orca}
-    user: ${sql_migration_user:orca_migrate}
+    jdbcUrl: ${sql_migration_jdbcUrl:jdbc:mysql://mysql-service:3306/orca?characterEncoding=UTF-8}
+    user: ${sql_migration_user:coding}
     password: ${sql_migration_passwrd:coding123}
 
 # Ensure we're only using SQL for accessing execution state
