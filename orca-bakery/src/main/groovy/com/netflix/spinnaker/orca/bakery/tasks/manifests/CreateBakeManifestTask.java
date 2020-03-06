@@ -41,6 +41,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 @Component
 @Slf4j
@@ -98,7 +99,11 @@ public class CreateBakeManifestTask implements RetryableTask {
                             "Input artifact (id: %s, account: %s) could not be found in execution (id: %s).",
                             p.getId(), p.getAccount(), stage.getExecution().getId()));
                   }
-                  a.setArtifactAccount(p.getAccount());
+                  // there IS artifactAccount in the bounded artifact,
+                  // get account from inputArtifact only if its null
+                  if (StringUtils.isEmpty(a.getArtifactAccount())) {
+                    a.setArtifactAccount(p.getAccount());
+                  }
                   return a;
                 })
             .collect(Collectors.toList());
