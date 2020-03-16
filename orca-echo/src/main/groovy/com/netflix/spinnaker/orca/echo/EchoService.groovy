@@ -64,6 +64,10 @@ interface EchoService {
       PUBSUB,
       SLACK,
       SMS,
+      EWECHAT,
+      ECODING,
+      EDINGTALK,
+      EBEARYCHAT
     }
 
     static enum Severity {

@@ -172,6 +172,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     }
 
     void notify(EchoService echoService, Stage stage, String notificationState) {
+      Stage a = stage
       echoService.create(new EchoService.Notification(
         notificationType: EchoService.Notification.Type.valueOf(type.toUpperCase()),
         to: address ? [address] : (publisherName ? [publisherName] : null),
