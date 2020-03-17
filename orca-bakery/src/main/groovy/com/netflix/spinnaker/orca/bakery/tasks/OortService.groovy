@@ -24,4 +24,7 @@ import retrofit.http.*
 interface OortService {
   @PUT("/artifacts/fetch/")
   Response fetchArtifact(@Body Artifact artifact)
+
+  @PUT("/artifacts/getUrl/")
+  Map getArtifactUrl(@Body Artifact artifact)
 }

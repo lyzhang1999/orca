@@ -18,27 +18,26 @@ package com.netflix.spinnaker.orca.bakery.tasks;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import lombok.Data;
 
 @Data
 public class BakeContext {
-  @Nullable private Map<Object, Object> manifest;
+  private Map<String, Object> manifest;
 
-  private Source source;
+  public List<String> getArtifactPackages(){
+    return (List<String>) manifest.getOrDefault("artifact_packages", Collections.emptyList());
+  }
 
-  private String manifestArtifactId;
-  private String manifestArtifactAccount;
-  private Artifact manifestArtifact;
+  public void setArtifactPackages(List<Artifact> artifacts){
+    manifest.put("artifact_packages", artifacts);
+  }
 
-  private boolean skipExpressionEvaluation = false;
-
-  enum Source {
-    @JsonProperty("text")
-    Text,
-
-    @JsonProperty("artifact")
-    Artifact
+  public List<Map<String,Object>> getProvisioners(){
+    return ((List<Map<String,Object>>)manifest.getOrDefault("provisioners", Collections.emptyList()));
   }
 }
+
