@@ -16,28 +16,26 @@
 
 package com.netflix.spinnaker.orca.bakery.tasks;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import lombok.Data;
 
 @Data
 public class BakeContext {
   private Map<String, Object> manifest;
 
-  public List<String> getArtifactPackages(){
+  public List<String> getArtifactPackages() {
     return (List<String>) manifest.getOrDefault("artifact_packages", Collections.emptyList());
   }
 
-  public void setArtifactPackages(List<Artifact> artifacts){
+  public void setArtifactPackages(List<Artifact> artifacts) {
     manifest.put("artifact_packages", artifacts);
   }
 
-  public List<Map<String,Object>> getProvisioners(){
-    return ((List<Map<String,Object>>)manifest.getOrDefault("provisioners", Collections.emptyList()));
+  public List<Map<String, Object>> getProvisioners() {
+    return ((List<Map<String, Object>>)
+        manifest.getOrDefault("provisioners", Collections.emptyList()));
   }
 }
-

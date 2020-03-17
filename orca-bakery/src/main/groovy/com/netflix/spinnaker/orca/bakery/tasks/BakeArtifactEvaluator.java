@@ -17,7 +17,6 @@
 package com.netflix.spinnaker.orca.bakery.tasks;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
@@ -28,18 +27,13 @@ import io.micrometer.core.instrument.util.IOUtils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import retrofit.client.Response;
 
 @Component
@@ -61,16 +55,18 @@ public class BakeArtifactEvaluator {
             provisioners -> {
               for (Map provisioner : provisioners) {
                 String type = (String) provisioner.get("type");
-                //region 处理 script provisioner
-                String script = (String) provisioner.getOrDefault("script","");
+                // region 处理 script provisioner
+                String script = (String) provisioner.getOrDefault("script", "");
                 // 用户自己设置的 shell provisioners
-                if (type.equals("shell") && !script.equals("{{user `configDir`}}/install_packages.sh")){
+                if (type.equals("shell")
+                    && !script.equals("{{user `configDir`}}/install_packages.sh")) {
                   final Pattern pattern = Pattern.compile("\\{\\{artifact\\s+`(.*)`\\}\\}");
                   Matcher matcher = pattern.matcher(script);
-                  if(matcher.matches()){
+                  if (matcher.matches()) {
                     // 用户在shell provisioners 引用了一个制品
                     String scriptArtifactId = matcher.group(1);
-                    Artifact scriptArtifact = artifactResolver.getBoundArtifactForStage(stage, scriptArtifactId, null);
+                    Artifact scriptArtifact =
+                        artifactResolver.getBoundArtifactForStage(stage, scriptArtifactId, null);
                     String scriptText =
                         retrySupport.retry(
                             () -> {
@@ -78,7 +74,10 @@ public class BakeArtifactEvaluator {
                               try (InputStream body = response.getBody().in()) {
                                 return IOUtils.toString(body, StandardCharsets.UTF_8);
                               } catch (Exception e) {
-                                log.warn("Failure fetching/parsing scriptArtifact from {}", scriptArtifact, e);
+                                log.warn(
+                                    "Failure fetching/parsing scriptArtifact from {}",
+                                    scriptArtifact,
+                                    e);
                                 // forces a retry
                                 throw new IllegalStateException(e);
                               }
@@ -92,31 +91,33 @@ public class BakeArtifactEvaluator {
                     provisioner.remove("script");
                   }
                 }
-                //endregion
+                // endregion
 
-                //region 处理 file provisioner
-                if (type.equals("file")){
-                  String source = (String) provisioner.getOrDefault("source","");
+                // region 处理 file provisioner
+                if (type.equals("file")) {
+                  String source = (String) provisioner.getOrDefault("source", "");
                   // 防止用户注入 artifact json 文件，这个文件里面可引用别人的文件而不会被检查到
-                  String destination = (String) provisioner.getOrDefault("destination","");
-                  if(destination.equalsIgnoreCase("/tmp/artifacts.json")){
-                    throw new IllegalArgumentException("destination /tmp/artifacts.json is protected!");
+                  String destination = (String) provisioner.getOrDefault("destination", "");
+                  if (destination.equalsIgnoreCase("/tmp/artifacts.json")) {
+                    throw new IllegalArgumentException(
+                        "destination /tmp/artifacts.json is protected!");
                   }
                   final Pattern pattern = Pattern.compile("\\{\\{artifact\\s+`(.*)`\\}\\}");
                   Matcher matcher = pattern.matcher(source);
-                  if(matcher.matches()){
+                  if (matcher.matches()) {
                     // 用户在file provisioners 引用了一个制品
                     String scriptArtifactId = matcher.group(1);
-                    Artifact fileArtifact = artifactResolver.getBoundArtifactForStage(stage, scriptArtifactId, null);
+                    Artifact fileArtifact =
+                        artifactResolver.getBoundArtifactForStage(stage, scriptArtifactId, null);
                     try {
                       provisioner.put("source", objectMapper.writeValueAsString(fileArtifact));
                     } catch (JsonProcessingException e) {
                       e.printStackTrace();
                     }
-                  }
-                  else {
-                    //用户输入的文件或别的东西，不支持，防止窃取别的用户的文件
-                    throw new IllegalArgumentException("can not use file path source in file provisioner, please use artifactId ");
+                  } else {
+                    // 用户输入的文件或别的东西，不支持，防止窃取别的用户的文件
+                    throw new IllegalArgumentException(
+                        "can not use file path source in file provisioner, please use artifactId ");
                   }
                 }
                 // endregion
@@ -137,7 +138,7 @@ public class BakeArtifactEvaluator {
     return retrySupport.retry(
         () -> {
           try {
-            return (String)oort.getArtifactUrl(artifact).getOrDefault("result",null);
+            return (String) oort.getArtifactUrl(artifact).getOrDefault("result", null);
           } catch (Exception e) {
             log.warn("Failure get artifact url  from {}", artifact, e);
             // forces a retry
