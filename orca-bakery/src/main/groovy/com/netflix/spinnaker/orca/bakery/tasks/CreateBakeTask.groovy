@@ -35,9 +35,9 @@ import com.netflix.spinnaker.orca.pipeline.util.PackageInfo
 import com.netflix.spinnaker.orca.pipeline.util.PackageType
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
+import org.apache.commons.lang3.StringUtils
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowire
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
@@ -61,7 +61,7 @@ class CreateBakeTask implements RetryableTask {
   ObjectMapper objectMapper;
 
   @Autowired
-  JsonManifestEvaluator jsonManifestEvaluator
+  BakeArtifactEvaluator bakeArtifactEvaluator
 
   @Autowired ObjectMapper mapper
 
@@ -103,7 +103,9 @@ class CreateBakeTask implements RetryableTask {
 
       log.info("create bake task evalueated context,$context");
       log.info("create bake task evalueated stage,$stage");
-      String packerConfig = jsonManifestEvaluator.evaluate(stage,context);
+      // 处理 shell provisioner 里面引用的 artifact
+      // 处理 file provisioner 里面引用的 artifact
+      String packerConfig = bakeArtifactEvaluator.evaluateProvisioners(stage,context);
       // If the user has specified a base OS that is unrecognized by Rosco, this method will
       // throw a Retrofit exception (HTTP 404 Not Found)
       def bake = bakeFromContext(stage, bakery, packerConfig)
@@ -175,7 +177,7 @@ class CreateBakeTask implements RetryableTask {
       artifacts,
       packageType.packageType,
       packageType.versionDelimiter,
-      bakery.config.extractBuildDetails as Boolean,
+      bakery.config.extractBuildDetails as Boolean  ,
       false /* extractVersion */,
       mapper)
 
@@ -184,11 +186,20 @@ class CreateBakeTask implements RetryableTask {
     def pipeline = stage.execution.pipelineConfigId
     requestMap.pipeline = pipeline;
 
+    //set default to empty array to prevent injection
+    requestMap.packageArtifacts = []
     // if the field "packageArtifactIds" is present in the context, because it was set in the UI,
     // this will resolve those ids into real artifacts and then put them in List<Artifact> packageArtifacts
     requestMap.packageArtifacts = stage.context.packageArtifactIds.collect { String artifactId ->
-      artifactResolver.getBoundArtifactForId(stage, artifactId)
+      Artifact artifact = artifactResolver.getBoundArtifactForId(stage, artifactId)
+      // 处理 引用 coding 制品库的制品 url 地址
+      if(StringUtils.isEmpty(artifact.reference)) {
+        artifact.reference = bakeArtifactEvaluator.evaluateArtifactReference(artifact)
+        log.info("change artifact reference ${artifact.name} to ${artifact.reference}")
+      }
+      return artifact
     }
+    log.info("requestMap.packageArtifacts is ${requestMap.packageArtifacts}")
 
     // Workaround for deck/titusBakeStage.js historically injecting baseOs=trusty into stage definitions;
     // baseOs is unnecessary for docker bakes
