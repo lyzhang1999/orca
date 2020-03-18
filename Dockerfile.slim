@@ -1,7 +1,11 @@
-FROM openjdk:8-jre-alpine
+FROM codingcorp-docker.pkg.coding.net/registry/release/spin-base:1.0
+
 MAINTAINER delivery-engineering@netflix.com
-COPY --from=compile /compiled_sources/orca-web/build/install/orca /opt/orca
-RUN apk --no-cache add --update bash
+COPY --from=orca-compile /compiled_sources/orca-web/build/install/orca /opt/orca
+COPY --from=orca-compile /compiled_sources/coding-deploy/config /opt/spinnaker/config
+COPY --from=orca-compile /compiled_sources/coding-deploy/scripts /opt/spinnaker/scripts
+
 RUN adduser -D -S spinnaker
 USER spinnaker
-CMD ["/opt/orca/bin/orca"]
+
+ENTRYPOINT ["/sbin/tini", "--", "/opt/orca/bin/orca"]

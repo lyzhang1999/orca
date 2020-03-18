@@ -10,7 +10,7 @@ ARTIFACT=orca
 
 COMMIT_ID=$(git rev-parse HEAD)
 
-docker build -t compile -f Dockerfile.compile .
+docker build -t ${ARTIFACT}-compile -f Dockerfile.compile .
 docker build -t ${ARTIFACT}:latest -f Dockerfile.slim .
 
 if [ "$1" = "--push" ]; then
