@@ -47,6 +47,7 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -337,9 +338,13 @@ public class ArtifactResolver {
     expectedArtifact
         .getMatchArtifact()
         .setType(".*" + expectedArtifact.getMatchArtifact().getType());
-    expectedArtifact
-        .getMatchArtifact()
-        .setVersion(".*" + expectedArtifact.getMatchArtifact().getVersion());
+
+    if (!StringUtils.isEmpty(expectedArtifact.getMatchArtifact().getVersion())) {
+      expectedArtifact
+          .getMatchArtifact()
+          .setVersion(".*" + expectedArtifact.getMatchArtifact().getVersion());
+    }
+
     List<Artifact> matches =
         possibleMatches.stream().filter(expectedArtifact::matches).collect(toList());
     Artifact result;
