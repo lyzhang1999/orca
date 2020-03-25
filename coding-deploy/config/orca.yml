@@ -30,7 +30,7 @@ bakery:
   enabled: true
   baseUrl: ${services.rosco.baseUrl:http://localhost:8087}
   extractBuildDetails: ${services.rosco.extractBuildDetails:true}
-  allowMissingPackageInstallation: ${services.rosco.allowMissingPackageInstallation:false}
+  allowMissingPackageInstallation: true
 
 echo:
   enabled: true
