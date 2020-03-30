@@ -19,7 +19,9 @@ package com.netflix.spinnaker.orca.echo
 import com.fasterxml.jackson.annotation.JsonInclude
 import retrofit.client.Response
 import retrofit.http.Body
+import retrofit.http.DELETE
 import retrofit.http.GET
+import retrofit.http.Header
 import retrofit.http.Headers
 import retrofit.http.POST
 import retrofit.http.Path
@@ -35,6 +37,31 @@ interface EchoService {
   @Headers("Content-type: application/json")
   @POST("/notifications")
   Response create(@Body Notification notification)
+
+  // TCR TRIGGER
+  @DELETE("/tcr/trigger/{region}/{instanceId}/{namespaceId}/{triggerId}")
+  Response deleteTcrTrigger(@Header("X-SPINNAKER-USER") String userGK, @Path("region") String region, @Path("instanceId") String instanceId, @Path("namespaceId") Integer namespaceId, @Path("triggerId") Integer triggerId)
+
+  @GET("/tcr/trigger/list/{region}/{instanceId}")
+  List<Map<String, Object>> getTcrTriggerList(@Header("X-SPINNAKER-USER") String userGK, @Path("region") String region, @Path("instanceId") String instanceId)
+
+  @Headers("Content-type: application/json")
+  @POST("/tcr/trigger")
+  Response createTcrTrigger(@Header("X-SPINNAKER-USER") String userGK, @Body TcrTrigger triggerData)
+
+
+  static class TcrTrigger {
+    String userGK
+    String region
+    String instance
+    String instanceId
+    Integer namespaceId
+    Integer triggerId
+    String name
+    String description
+    String condition
+    String address
+  }
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   static class Notification {

@@ -43,6 +43,8 @@ import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.util.logging.Slf4j
 import javassist.NotFoundException
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -363,7 +365,9 @@ class OperationsController {
 
   @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody Map input) {
-    def execution = [application: input.application, name: input.description, stages: input.job, trigger: input.trigger ?: [:]]
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication()
+    String userName = (String) auth.getPrincipal()
+    def execution = [application: input.application, name: input.description, stages: input.job, trigger: input.trigger, userGK: userName ?: [:]]
     parsePipelineTrigger(executionRepository, buildService, execution, true)
     startTask(execution)
   }

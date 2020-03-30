@@ -1,11 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="distributionType" value="DEFAULT_WRAPPED" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
-        <option name="useAutoImport" value="true" />
+        <option name="gradleJvm" value="9" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/orca-api" />
+            <option value="$PROJECT_DIR$/orca-applications" />
+            <option value="$PROJECT_DIR$/orca-bakery" />
+            <option value="$PROJECT_DIR$/orca-bom" />
+            <option value="$PROJECT_DIR$/orca-clouddriver" />
+            <option value="$PROJECT_DIR$/orca-core" />
+            <option value="$PROJECT_DIR$/orca-core-tck" />
+            <option value="$PROJECT_DIR$/orca-deploymentmonitor" />
+            <option value="$PROJECT_DIR$/orca-dry-run" />
+            <option value="$PROJECT_DIR$/orca-echo" />
+            <option value="$PROJECT_DIR$/orca-eureka" />
+            <option value="$PROJECT_DIR$/orca-flex" />
+            <option value="$PROJECT_DIR$/orca-front50" />
+            <option value="$PROJECT_DIR$/orca-igor" />
+            <option value="$PROJECT_DIR$/orca-integrations-cloudfoundry" />
+            <option value="$PROJECT_DIR$/orca-integrations-gremlin" />
+            <option value="$PROJECT_DIR$/orca-kayenta" />
+            <option value="$PROJECT_DIR$/orca-keel" />
+            <option value="$PROJECT_DIR$/orca-kotlin" />
+            <option value="$PROJECT_DIR$/orca-migration" />
+            <option value="$PROJECT_DIR$/orca-mine" />
+            <option value="$PROJECT_DIR$/orca-pipelinetemplate" />
+            <option value="$PROJECT_DIR$/orca-qos" />
+            <option value="$PROJECT_DIR$/orca-queue" />
+            <option value="$PROJECT_DIR$/orca-queue-redis" />
+            <option value="$PROJECT_DIR$/orca-queue-sql" />
+            <option value="$PROJECT_DIR$/orca-queue-tck" />
+            <option value="$PROJECT_DIR$/orca-redis" />
+            <option value="$PROJECT_DIR$/orca-retrofit" />
+            <option value="$PROJECT_DIR$/orca-sql" />
+            <option value="$PROJECT_DIR$/orca-sql-mysql" />
+            <option value="$PROJECT_DIR$/orca-test" />
+            <option value="$PROJECT_DIR$/orca-test-groovy" />
+            <option value="$PROJECT_DIR$/orca-test-kotlin" />
+            <option value="$PROJECT_DIR$/orca-test-redis" />
+            <option value="$PROJECT_DIR$/orca-validation" />
+            <option value="$PROJECT_DIR$/orca-web" />
+            <option value="$PROJECT_DIR$/orca-webhook" />
+          </set>
+        </option>
+        <option name="useQualifiedModuleNames" value="true" />
       </GradleProjectSettings>
     </option>
   </component>

@@ -35,6 +35,8 @@ public class SavePipelineStage implements StageDefinitionBuilder {
       System.out.print("--------- run as useManagedServiceAccounts ---------");
       builder.withTask("updatePipelinePermissions", SaveServiceAccountTask.class);
     }
+    // TCR Trigger Sync
+    // builder.withTask("CreateTcrTriggerTask", CreateTcrTriggerTask.class);
 
     builder
         .withTask("savePipeline", SavePipelineTask.class)
