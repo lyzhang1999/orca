@@ -80,12 +80,12 @@ public class CreateTcrTriggerTask implements RetryableTask {
       log.info("------------------- existingPipeline is ------------------ {}", existingPipeline);
       getAndDeleteOldPipelineTcrTrigger(userGK, existingPipeline);
     } catch (Exception e) {
-      log.info("save pipeline");
+      log.info("Save pipeline Error {}", e);
     }
     try {
       creatTcrTrigger(pipeline, userGK);
     } catch (Exception e) {
-      log.error("save TCR Trigger Error");
+      log.error("Save TCR Trigger Error {}", e);
     }
     return TaskResult.ofStatus(SUCCEEDED);
   }
