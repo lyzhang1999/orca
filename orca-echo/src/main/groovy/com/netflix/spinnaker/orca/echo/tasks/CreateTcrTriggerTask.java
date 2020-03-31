@@ -78,13 +78,15 @@ public class CreateTcrTriggerTask implements RetryableTask {
     try {
       Map<String, Object> existingPipeline = fetchExistingPipeline(pipeline);
       log.info("------------------- existingPipeline is ------------------ {}", existingPipeline);
-      // 查找出原来 pipeline 的 TCR Trigger 并批量删除
       getAndDeleteOldPipelineTcrTrigger(userGK, existingPipeline);
     } catch (Exception e) {
       log.info("save pipeline");
     }
-    // 创建新的
-    creatTcrTrigger(pipeline, userGK);
+    try {
+      creatTcrTrigger(pipeline, userGK);
+    } catch (Exception e) {
+      log.error("save TCR Trigger Error");
+    }
     return TaskResult.ofStatus(SUCCEEDED);
   }
 
@@ -106,6 +108,7 @@ public class CreateTcrTriggerTask implements RetryableTask {
     if (newTrigger.size() == 0) return true;
     List<EchoService.TcrTrigger> needAdd = new ArrayList<>();
     for (HashMap trigger : newTrigger) {
+      if (!"tcr_webhook".equalsIgnoreCase(String.valueOf(trigger.get("type")))) continue;
       EchoService.TcrTrigger tcrTrigger = new EchoService.TcrTrigger();
       tcrTrigger.setUserGK(userGK);
       tcrTrigger.setRegion(trigger.get("tcrRegionName").toString());
@@ -121,7 +124,8 @@ public class CreateTcrTriggerTask implements RetryableTask {
               + trigger.get("source").toString());
       needAdd.add(tcrTrigger);
     }
-    return createTcrTrigger(userGK, needAdd);
+    if (needAdd.size() != 0) return createTcrTrigger(userGK, needAdd);
+    return true;
   }
 
   void getAndDeleteOldPipelineTcrTrigger(String userGK, Map<String, Object> existingPipeline) {
