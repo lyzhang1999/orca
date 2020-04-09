@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.controllers
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spectator.api.Registry
+import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.front50.Front50Service
@@ -43,6 +44,7 @@ import org.springframework.security.access.prepost.PostAuthorize
 import org.springframework.security.access.prepost.PostFilter
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
 
@@ -85,6 +87,9 @@ class TaskController {
 
   @Autowired
   StageDefinitionBuilderFactory stageDefinitionBuilderFactory
+
+  @Autowired
+  FiatPermissionEvaluator fiatPermissionEvaluator
 
   @Value('${tasks.days-of-execution-history:14}')
   int daysOfExecutionHistory
@@ -139,7 +144,19 @@ class TaskController {
   // GUID, it's unlikely than an attacker would be able to guess the identifier for any task.
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.GET)
   OrchestrationViewModel getTask(@PathVariable String id) {
-    convert executionRepository.retrieve(ORCHESTRATION, id)
+    Execution orchestration = executionRepository.retrieve(ORCHESTRATION, id)
+    if(orchestration.getStatus() == ExecutionStatus.SUCCEEDED) {
+      boolean hasPermission = fiatPermissionEvaluator.hasPermission(SecurityContextHolder.getContext().getAuthentication(),
+        orchestration.getApplication(),
+        'APPLICATION',
+        'READ')
+      if(!hasPermission) {
+        orchestration.setStatus(ExecutionStatus.RUNNING)
+        log.debug("==== task status changed from SUCCEEDED TO RUNNING ====")
+      }
+    }
+    OrchestrationViewModel result = convert orchestration
+    return result
   }
 
   Execution getOrchestration(String id) {
