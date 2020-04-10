@@ -55,6 +55,7 @@ public class BakeArtifactEvaluator {
             provisioners -> {
               for (Map provisioner : provisioners) {
                 String type = (String) provisioner.get("type");
+                provisioner.remove("sub_type");
                 // region 处理 script provisioner
                 String script = (String) provisioner.getOrDefault("script", "");
                 // 用户自己设置的 shell provisioners
