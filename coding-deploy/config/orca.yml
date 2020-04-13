@@ -33,8 +33,8 @@ bakery:
   allowMissingPackageInstallation: true
 
 echo:
-  enabled: true
-  baseUrl: ${services.echo.baseUrl:http://localhost:8089}
+  baseUrl: ${spin_echo_worker_baseUrl:http://spin-echo-worker:8089}
+  enabled: ${spin_echo_worker_enabled:true}
 
 igor:
   enabled: true
