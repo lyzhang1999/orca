@@ -38,4 +38,8 @@ public class BakeContext {
     return ((List<Map<String, Object>>)
         manifest.getOrDefault("provisioners", Collections.emptyList()));
   }
+
+  public List<Map<String, Object>> getBuilders() {
+    return ((List<Map<String, Object>>) manifest.getOrDefault("builders", Collections.emptyList()));
+  }
 }
