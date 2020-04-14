@@ -103,6 +103,7 @@ class CreateBakeTask implements RetryableTask {
 
       log.info("create bake task evalueated context,$context");
       log.info("create bake task evalueated stage,$stage");
+      this.removeUnusedFields(stage,context);
       // 处理 shell provisioner 里面引用的 artifact
       // 处理 file provisioner 里面引用的 artifact
       String packerConfig = bakeArtifactEvaluator.evaluateProvisioners(stage,context);
@@ -217,5 +218,19 @@ class CreateBakeTask implements RetryableTask {
       request.other().clear()
     }
     return request
+  }
+
+  /**
+   * 删除 bake 配置种不必要的字段
+   * @param stage
+   * @param bakeContext
+   */
+  void removeUnusedFields(Stage stage, BakeContext bakeContext) {
+    bakeContext.getBuilders().stream()
+            .forEach({ it ->
+              it.remove("account");
+              it.remove("artifact_packages");
+              it.remove("package");
+            });
   }
 }
