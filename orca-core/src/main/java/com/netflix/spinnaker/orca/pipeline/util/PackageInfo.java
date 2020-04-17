@@ -29,6 +29,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.util.*;
 import java.util.regex.Pattern;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * This class inspects the context of a stage, preceding stages, the trigger, and the parent
@@ -70,7 +71,8 @@ public class PackageInfo {
     this.buildDetailExtractor = new BuildDetailExtractor();
 
     // can be a space separated set of packages
-    if (stage.getContext().containsKey("package")) {
+    if (stage.getContext().containsKey("package")
+        && !StringUtils.isEmpty(stage.getContext().get("package").toString())) {
       String packages = stage.getContext().get("package").toString();
       for (String p : packages.split(" ")) {
         packageFilePatterns.add(Pattern.compile(format("%s.*\\.%s", p, packageType)));
