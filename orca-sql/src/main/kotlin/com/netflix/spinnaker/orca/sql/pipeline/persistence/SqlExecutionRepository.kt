@@ -280,7 +280,7 @@ class SqlExecutionRepository(
             .statusIn(criteria.statuses)
         },
         seek = {
-          it.orderBy(field("id").desc()).limit(criteria.pageSize)
+          it.orderBy(field("id").desc()).offset(criteria.offset).limit(criteria.pageSize)
         }
       )
     } else {
@@ -293,12 +293,30 @@ class SqlExecutionRepository(
             .statusIn(criteria.statuses)
         },
         seek = {
-          it.orderBy(field("id").desc()).limit(criteria.pageSize)
+          it.orderBy(field("id").desc()).offset(criteria.offset).limit(criteria.pageSize)
         }
       )
     }
 
     return Observable.from(select.fetchExecutions())
+  }
+
+  override fun retrievePipelinesForPipelineConfigIdCount(
+    pipelineConfigId: String,
+    criteria: ExecutionCriteria
+  ): Int {
+    return if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
+      jooq.selectCount()
+        .from("pipelines")
+        .where(field("config_id").eq(pipelineConfigId))
+        .fetchOneInto(Int::class.java)
+    } else {
+      jooq.selectCount()
+        .from("pipelines")
+        .where(field("config_id").eq(pipelineConfigId))
+        .statusIn(criteria.statuses)
+        .fetchOneInto(Int::class.java)
+    }
   }
 
   override fun retrieveOrchestrationsForApplication(
@@ -479,8 +497,8 @@ class SqlExecutionRepository(
       conditions = {
         var conditions = it.where(
           field("config_id").`in`(*pipelineConfigIds.toTypedArray())
-          .and(field("build_time").gt(buildTimeStartBoundary))
-          .and(field("build_time").lt(buildTimeEndBoundary))
+            .and(field("build_time").gt(buildTimeStartBoundary))
+            .and(field("build_time").lt(buildTimeEndBoundary))
         )
 
         if (executionCriteria.statuses.isNotEmpty()) {
