@@ -79,6 +79,11 @@ public interface ExecutionRepository {
   Observable<Execution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
+  default int retrievePipelinesForPipelineConfigIdCount(
+      @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria) {
+    return 0;
+  }
+
   /**
    * Returns executions in the time boundary. Redis impl does not respect pageSize or offset params,
    * and returns all executions. Sql impl respects these params.
@@ -154,9 +159,18 @@ public interface ExecutionRepository {
     private int page;
     private Instant startTimeCutoff;
     private ExecutionComparator sortType;
+    private int offset = 0;
 
     public int getPageSize() {
       return pageSize;
+    }
+
+    public int getOffset() {
+      return offset;
+    }
+
+    public void setOffset(int offset) {
+      this.offset = offset;
     }
 
     public @Nonnull ExecutionCriteria setPageSize(int pageSize) {

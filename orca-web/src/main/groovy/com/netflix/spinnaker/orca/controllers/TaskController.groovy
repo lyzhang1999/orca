@@ -18,6 +18,8 @@ package com.netflix.spinnaker.orca.controllers
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.google.common.annotations.VisibleForTesting
+import com.google.common.collect.Lists
+import com.google.common.collect.Maps
 import com.netflix.spectator.api.Registry
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator
 import com.netflix.spinnaker.kork.web.exceptions.NotFoundException
@@ -145,12 +147,12 @@ class TaskController {
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.GET)
   OrchestrationViewModel getTask(@PathVariable String id) {
     Execution orchestration = executionRepository.retrieve(ORCHESTRATION, id)
-    if(orchestration.getStatus() == ExecutionStatus.SUCCEEDED) {
+    if (orchestration.getStatus() == ExecutionStatus.SUCCEEDED) {
       boolean hasPermission = fiatPermissionEvaluator.hasPermission(SecurityContextHolder.getContext().getAuthentication(),
         orchestration.getApplication(),
         'APPLICATION',
         'READ')
-      if(!hasPermission) {
+      if (!hasPermission) {
         orchestration.setStatus(ExecutionStatus.RUNNING)
         log.debug("==== task status changed from SUCCEEDED TO RUNNING ====")
       }
@@ -257,7 +259,7 @@ class TaskController {
       unexpandPipelineExecutions(allPipelines)
     }
 
-    return filterPipelinesByHistoryCutoff(allPipelines, limit)
+    return allPipelines
   }
 
   /**
@@ -319,7 +321,7 @@ class TaskController {
     @RequestParam(value = "triggerTimeStartBoundary", defaultValue = "0") long triggerTimeStartBoundary,
     @RequestParam(value = "triggerTimeEndBoundary", defaultValue = "9223372036854775807" /* Long.MAX_VALUE */) long triggerTimeEndBoundary,
     @RequestParam(value = "statuses", required = false) String statuses,
-    @RequestParam(value = "startIndex", defaultValue =  "0") int startIndex,
+    @RequestParam(value = "startIndex", defaultValue = "0") int startIndex,
     @RequestParam(value = "size", defaultValue = "10") int size,
     @RequestParam(value = "reverse", defaultValue = "false") boolean reverse,
     @RequestParam(value = "expand", defaultValue = "false") boolean expand
@@ -355,8 +357,7 @@ class TaskController {
       pipelineConfigIds = pipelines*.id as List<String>
     }
 
-    ExecutionCriteria executionCriteria =  new ExecutionCriteria()
-      .setSortType( sortType )
+    ExecutionCriteria executionCriteria = new ExecutionCriteria().setSortType(sortType)
     if (statuses != null && statuses != "") {
       executionCriteria.setStatuses(statuses.split(",").toList())
     }
@@ -502,7 +503,7 @@ class TaskController {
   // If other execution mutations need validation, factor this out.
   void validateStageUpdate(Stage stage) {
     if (stage.context.manualSkip
-        && !stageDefinitionBuilderFactory.builderFor(stage)?.canManuallySkip()) {
+      && !stageDefinitionBuilderFactory.builderFor(stage)?.canManuallySkip()) {
       throw new CannotUpdateExecutionStage("Cannot manually skip stage.")
     }
   }
@@ -524,7 +525,7 @@ class TaskController {
     def execution = executionRepository.retrieve(PIPELINE, id)
     def context = [
       execution: execution,
-      trigger: mapper.convertValue(execution.trigger, Map.class)
+      trigger  : mapper.convertValue(execution.trigger, Map.class)
     ]
 
     def evaluated = contextParameterProcessor.process(
@@ -541,7 +542,7 @@ class TaskController {
                                             @PathVariable("stageId") String stageId,
                                             @RequestParam("expression") String expression) {
     def execution = executionRepository.retrieve(PIPELINE, id)
-    def stage = execution.stages.find{it.id == stageId}
+    def stage = execution.stages.find { it.id == stageId }
 
     if (stage == null) {
       throw new NotFoundException("Stage $stageId not found in execution $id")
@@ -554,13 +555,13 @@ class TaskController {
     )
     return [result: evaluated?.expression, detail: evaluated?.expressionEvaluationSummary]
   }
-  
+
   /**
    * Adds trigger and execution to stage context so that expression evaluation can be tested.
    * This is not great, because it's brittle, but it's very useful to be able to test expressions.
    */
   private Map<String, Object> augmentContext(Stage stage) {
-    Map <String, Object> augmentedContext = stage.context
+    Map<String, Object> augmentedContext = stage.context
     augmentedContext.put("trigger", stage.execution.trigger)
     augmentedContext.put("execution", stage.execution)
     return augmentedContext
@@ -569,22 +570,22 @@ class TaskController {
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/v2/applications/{application}/pipelines", method = RequestMethod.GET)
   List<Execution> getApplicationPipelines(@PathVariable String application,
-                                          @RequestParam(value = "limit", defaultValue = "5")
-                                            int limit,
-                                          @RequestParam(value = "statuses", required = false)
-                                            String statuses,
-                                         @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
-    return getPipelinesForApplication(application, limit, statuses, expand)
+                                          @RequestParam(value = "limit", defaultValue = "5") int limit,
+                                          @RequestParam(value = "offset", defaultValue = "0") int offset,
+                                          @RequestParam(value = "configId", required = false) String configId,
+                                          @RequestParam(value = "statuses", required = false) String statuses,
+                                          @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
+    return getPipelinesForApplication(application, limit, offset, configId, statuses, expand)
   }
 
   @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
   @RequestMapping(value = "/applications/{application}/pipelines", method = RequestMethod.GET)
   List<Execution> getPipelinesForApplication(@PathVariable String application,
-                                             @RequestParam(value = "limit", defaultValue = "5")
-                                               int limit,
-                                             @RequestParam(value = "statuses", required = false)
-                                               String statuses,
-                                            @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
+                                             @RequestParam(value = "limit", defaultValue = "5") int limit,
+                                             @RequestParam(value = "offset", defaultValue = "0") int offset,
+                                             @RequestParam(value = "configId", required = false) String configId,
+                                             @RequestParam(value = "statuses", required = false) String statuses,
+                                             @RequestParam(value = "expand", defaultValue = "true") Boolean expand) {
     if (!front50Service) {
       throw new UnsupportedOperationException("Cannot lookup pipelines, front50 has not been enabled. Fix this by setting front50.enabled: true")
     }
@@ -596,13 +597,11 @@ class TaskController {
     statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
     def executionCriteria = new ExecutionCriteria(
       pageSize: limit,
+      offset: offset,
       statuses: (statuses.split(",") as Collection)
     )
 
-    def pipelineConfigIds = front50Service.getPipelines(application, false)*.id as List<String>
-    def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
-    def allIds = pipelineConfigIds + strategyConfigIds
-
+    def allIds = getAllPipelineConfigIds(application, configId)
     def allPipelines = rx.Observable.merge(allIds.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
     }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
@@ -611,7 +610,40 @@ class TaskController {
       unexpandPipelineExecutions(allPipelines)
     }
 
-    return filterPipelinesByHistoryCutoff(allPipelines, limit)
+    return allPipelines
+  }
+
+  @PreAuthorize("hasPermission(#application, 'APPLICATION', 'READ')")
+  @RequestMapping(value = "/v2/applications/{application}/pipelines/count", method = RequestMethod.GET)
+  Map getPipelinesForApplicationCount(@PathVariable String application,
+                                      @RequestParam(value = "configId", required = false) String configId,
+                                      @RequestParam(value = "statuses", required = false) String statuses) {
+    if (!front50Service) {
+      throw new UnsupportedOperationException("Cannot lookup pipelines, front50 has not been enabled. Fix this by setting front50.enabled: true")
+    }
+
+    statuses = statuses ?: ExecutionStatus.values()*.toString().join(",")
+    def executionCriteria = new ExecutionCriteria(
+      statuses: (statuses.split(",") as Collection)
+    )
+
+    def allIds = getAllPipelineConfigIds(application, configId)
+    Map<String, Integer> pipelineCountMap = Maps.newHashMap()
+    allIds.each {
+      pipelineCountMap.put(it, executionRepository.retrievePipelinesForPipelineConfigIdCount(it, executionCriteria))
+    }
+    return pipelineCountMap
+  }
+
+  private List<String> getAllPipelineConfigIds(String application, String configId) {
+    def pipelineConfigIds = front50Service.getPipelines(application, false)*.id as List<String>
+    def strategyConfigIds = front50Service.getStrategies(application)*.id as List<String>
+    def allIds = pipelineConfigIds + strategyConfigIds
+
+    if (!Objects.isNull(configId)) {
+      allIds = Lists.newArrayList(configId)
+    }
+    allIds
   }
 
   private void cancelExecution(ExecutionType executionType, String id) {
@@ -621,9 +653,9 @@ class TaskController {
   private void cancelExecution(ExecutionType executionType, String id, String reason) {
     executionRepository.retrieve(executionType, id).with { execution ->
       executionRunner.cancel(
-              execution,
-              AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
-              reason
+        execution,
+        AuthenticatedRequest.getSpinnakerUser().orElse("anonymous"),
+        reason
       )
     }
     executionRepository.updateStatus(executionType, id, ExecutionStatus.CANCELED)
@@ -705,7 +737,7 @@ class TaskController {
         if (stage.context?.group) {
           // TODO: consider making "group" a top-level field on the Stage model
           // for now, retain group in the context, as it is needed for collapsing templated pipelines in the UI
-          stage.context = [ group: stage.context.group ]
+          stage.context = [group: stage.context.group]
         } else {
           stage.context = [:]
         }
@@ -767,8 +799,8 @@ class TaskController {
   private List<String> getPipelineConfigIdsOfReadableApplications() {
     List<String> applicationNames = front50Service.getAllApplications()*.name as List<String>
     List<String> pipelineConfigIds = applicationNames.stream()
-      .map{ applicationName -> front50Service.getPipelines(applicationName, false)*.id as List<String> }
-      .flatMap{ c -> c.stream() }
+      .map { applicationName -> front50Service.getPipelines(applicationName, false)*.id as List<String> }
+      .flatMap { c -> c.stream() }
       .collect(Collectors.toList())
 
     return pipelineConfigIds
@@ -849,7 +881,8 @@ class TaskController {
         for (int i = 0; i < collectionCopy.size(); i++) {
           Object collectionItem = collectionCopy.get(i)
           if (checkObjectMatchesSubset(collectionItem, subsetItem)) {
-            collectionCopy.remove(i) // remove to make sure to not match the same item more than once
+            collectionCopy.remove(i)
+            // remove to make sure to not match the same item more than once
             matchedItem = true
             break
           }
