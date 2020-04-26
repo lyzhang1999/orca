@@ -104,7 +104,7 @@ public class DeleteTcrTriggerTask implements RetryableTask {
       List<EchoService.TcrTrigger> needDelete = new ArrayList<>();
       for (HashMap trigger : oldTrigger) {
         if (!"tcr_webhook".equalsIgnoreCase(String.valueOf(trigger.get("type")))) continue;
-        if (trigger.get("tcrRegistryId") == null || trigger.get("tcrRegionName") == null) return;
+        if (trigger.get("tcrRegistryId") == null || trigger.get("tcrRegionName") == null) continue;
         EchoService.TcrTrigger tcrTrigger = new EchoService.TcrTrigger();
         String tcrTriggerName = trigger.get("source").toString();
         tcrTrigger.setRegion(trigger.get("tcrRegionName").toString());
