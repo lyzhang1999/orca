@@ -365,7 +365,6 @@ class OperationsController {
 
   @RequestMapping(value = "/ops", consumes = "application/context+json", method = RequestMethod.POST)
   Map<String, String> ops(@RequestBody Map input) {
-    log.info("map is {}", input)
     Authentication auth = SecurityContextHolder.getContext().getAuthentication()
     String userName = (String) auth.getPrincipal()
     def execution = [application: input.application, name: input.description, stages: input.job, trigger: input.trigger, userGK: userName ?: [:]]
