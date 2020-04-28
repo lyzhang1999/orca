@@ -253,7 +253,7 @@ class TaskController {
 
     List<Execution> allPipelines = rx.Observable.merge(ids.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(buildTimeSorter)
 
     if (!expand) {
       unexpandPipelineExecutions(allPipelines)
@@ -604,7 +604,7 @@ class TaskController {
     def allIds = getAllPipelineConfigIds(application, configId)
     def allPipelines = rx.Observable.merge(allIds.collect {
       executionRepository.retrievePipelinesForPipelineConfigId(it, executionCriteria)
-    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(startTimeOrId)
+    }).subscribeOn(Schedulers.io()).toList().toBlocking().single().sort(buildTimeSorter)
 
     if (!expand) {
       unexpandPipelineExecutions(allPipelines)
@@ -752,6 +752,13 @@ class TaskController {
     def bBuildTime = b.buildTime ?: 0
 
     return bBuildTime <=> aBuildTime ?: b.id <=> a.id
+  }
+
+  private static Closure buildTimeSorter = { a, b ->
+    def aBuildTime = a.buildTime ?: 0
+    def bBuildTime = b.buildTime ?: 0
+
+    return aBuildTime <=> bBuildTime
   }
 
   private static Closure startTimeOrId = { a, b ->
