@@ -280,7 +280,7 @@ class SqlExecutionRepository(
             .statusIn(criteria.statuses)
         },
         seek = {
-          it.orderBy(field("id").desc()).offset(criteria.offset).limit(criteria.pageSize)
+          it.orderBy(field("build_time").desc()).offset(criteria.offset).limit(criteria.pageSize)
         }
       )
     } else {
