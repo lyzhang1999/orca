@@ -79,6 +79,7 @@ interface EchoService {
       String executionId
       String application
       String user
+      String cloudProviders
     }
 
     static enum Type {
