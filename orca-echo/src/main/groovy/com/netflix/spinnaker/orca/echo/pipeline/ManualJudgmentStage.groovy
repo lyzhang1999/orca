@@ -16,6 +16,10 @@
 
 package com.netflix.spinnaker.orca.echo.pipeline
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.front50.model.Application
+
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
 import com.netflix.spinnaker.orca.*
@@ -67,6 +71,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     @Autowired(required = false)
     EchoService echoService
 
+    @Autowired(required = false)
+    Front50Service front50Service
+
+    @Autowired
+    ObjectMapper objectMapper
+
     @Override
     TaskResult execute(Stage stage) {
       StageData stageData = stage.mapTo(StageData)
@@ -101,10 +111,19 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
         if (notificationState != "manualJudgment" && !stage.context.sendNotifications) {
           return [:]
         }
+        // get application type
+        String cloudProviders = "kubernetes"
+        try {
+          Application application = front50Service.get(stage.execution.application)
+          cloudProviders = String.valueOf(application.cloudProviders) == "tencent" ? "tencent" : "kubernetes"
+          log.debug("application {} cloudProviders is {}", application, cloudProviders)
+        } catch (Exception e ) {
+          log.warn("manual judge get application error {}", stage.execution.application)
+        }
 
         stageData.notifications.findAll { it.shouldNotify(notificationState) }.each {
           try {
-            it.notify(echoService, stage, notificationState)
+            it.notify(echoService, stage, notificationState, cloudProviders)
           } catch (Exception e) {
             log.error("Unable to send notification (executionId: ${stage.execution.id}, address: ${it.address}, type: ${it.type})", e)
           }
@@ -140,6 +159,7 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     }
   }
 
+  @Slf4j
   static class Notification {
     String address
     String cc
@@ -171,8 +191,8 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
       return new Date(lastNotified.time + notifyEveryMs) <= now
     }
 
-    void notify(EchoService echoService, Stage stage, String notificationState) {
-      Stage a = stage
+    void notify(EchoService echoService, Stage stage, String notificationState, String cloudProviders) {
+      log.debug("cloudProviders is {}", cloudProviders)
       echoService.create(new EchoService.Notification(
         notificationType: EchoService.Notification.Type.valueOf(type.toUpperCase()),
         to: address ? [address] : (publisherName ? [publisherName] : null),
@@ -182,7 +202,8 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
         source: new EchoService.Notification.Source(
           executionType: stage.execution.type.toString(),
           executionId: stage.execution.id,
-          application: stage.execution.application
+          application: stage.execution.application,
+          cloudProviders: cloudProviders
         ),
         additionalContext: [
           stageName: stage.name,
