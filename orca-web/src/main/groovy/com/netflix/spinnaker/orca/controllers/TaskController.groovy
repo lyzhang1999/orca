@@ -39,6 +39,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.InheritConstructors
 import groovy.util.logging.Slf4j
+import org.slf4j.MDC
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -47,6 +48,8 @@ import org.springframework.security.access.prepost.PostFilter
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.access.prepost.PreFilter
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.util.Base64Utils
+import org.springframework.util.StringUtils
 import org.springframework.web.bind.annotation.*
 import rx.schedulers.Schedulers
 
@@ -492,6 +495,11 @@ class TaskController {
 
       // `lastModifiedBy` is deprecated (pending a update to deck)
       stage.context["lastModifiedBy"] = AuthenticatedRequest.getSpinnakerUser().orElse("anonymous")
+      String codingHeader = AuthenticatedRequest.Header.makeCustomHeader("CODING-NICKNAME")
+      String codingNickname = MDC.get(codingHeader)
+      if (!StringUtils.isEmpty(codingNickname)) {
+        stage.context["codingLastModifiedBy"] = new String(Base64Utils.decodeFromString(codingNickname))
+      }
 
       executionRepository.storeStage(stage)
 
