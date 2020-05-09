@@ -17,6 +17,6 @@ import org.springframework.stereotype.Component;
 public class CreateTcrTriggerStage implements StageDefinitionBuilder {
   @Override
   public void taskGraph(@Nonnull Stage stage, @Nonnull TaskNode.Builder builder) {
-    builder.withTask("createTcrTrigger", CreateTcrTriggerTask.class);
+    builder.withTask("syncTcrTrigger", CreateTcrTriggerTask.class);
   }
 }
