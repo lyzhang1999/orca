@@ -7,6 +7,12 @@ spectator:
   webEndpoint:
     enabled: false
 
+cd:
+  coding:
+    grpc:
+      host: ${cd_coding_grpc_host:localhost}
+      port: ${cd_coding_grpc_port:28888}
+
 # halconfig
 
 server:

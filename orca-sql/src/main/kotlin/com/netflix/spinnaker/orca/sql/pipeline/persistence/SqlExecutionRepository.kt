@@ -271,7 +271,18 @@ class SqlExecutionRepository(
     // When not filtering by status, provide an index hint to ensure use of `pipeline_config_id_idx` which
     // fully satisfies the where clause and order by. Without, some lookups by config_id matching thousands
     // of executions triggered costly full table scans.
-    val select = if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
+    val select = if (criteria.lastSyncTime != 0L) {
+      jooq.selectExecutions(
+        PIPELINE,
+        conditions = {
+          it.where(field("config_id").eq(pipelineConfigId))
+            .and(field("updated_at").ge(criteria.lastSyncTime))
+        },
+        seek = {
+          it.orderBy(field("build_time").desc()).offset(criteria.offset).limit(criteria.pageSize)
+        }
+      )
+    } else if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
       jooq.selectExecutions(
         PIPELINE,
         usingIndex = "pipeline_config_id_idx",
@@ -280,7 +291,7 @@ class SqlExecutionRepository(
             .statusIn(criteria.statuses)
         },
         seek = {
-          it.orderBy(field("build_time").desc()).offset(criteria.offset).limit(criteria.pageSize)
+          it.orderBy(field("build_time").desc()).limit(criteria.pageSize)
         }
       )
     } else {
@@ -293,7 +304,7 @@ class SqlExecutionRepository(
             .statusIn(criteria.statuses)
         },
         seek = {
-          it.orderBy(field("id").desc()).offset(criteria.offset).limit(criteria.pageSize)
+          it.orderBy(field("updated_at").desc()).limit(criteria.pageSize)
         }
       )
     }
@@ -301,22 +312,15 @@ class SqlExecutionRepository(
     return Observable.from(select.fetchExecutions())
   }
 
-  override fun retrievePipelinesForPipelineConfigIdCount(
+  override fun retrievePipelinesForPipelineConfigIdCounts(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
   ): Int {
-    return if (criteria.statuses.isEmpty() || criteria.statuses.size == ExecutionStatus.values().size) {
-      jooq.selectCount()
-        .from("pipelines")
-        .where(field("config_id").eq(pipelineConfigId))
-        .fetchOneInto(Int::class.java)
-    } else {
-      jooq.selectCount()
-        .from("pipelines")
-        .where(field("config_id").eq(pipelineConfigId))
-        .statusIn(criteria.statuses)
-        .fetchOneInto(Int::class.java)
-    }
+    return jooq.selectCount()
+      .from("pipelines")
+      .where(field("config_id").eq(pipelineConfigId))
+      .and(field("updated_at").ge(criteria.lastSyncTime))
+      .fetchOneInto(Int::class.java)
   }
 
   override fun retrieveOrchestrationsForApplication(
