@@ -19,6 +19,7 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.manifest;
 
 import static com.netflix.spinnaker.orca.ExecutionStatus.RUNNING;
 import static com.netflix.spinnaker.orca.ExecutionStatus.SUCCEEDED;
+import static java.net.HttpURLConnection.HTTP_ACCEPTED;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
+import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.RetryableTask;
 import com.netflix.spinnaker.orca.Task;
 import com.netflix.spinnaker.orca.TaskResult;
@@ -35,7 +37,9 @@ import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheStatusService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.AbstractCloudProviderAwareTask;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.io.IOException;
+import java.nio.channels.AcceptPendingException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -93,6 +97,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   @Override
   @Nonnull
   public TaskResult execute(@Nonnull Stage stage) {
+    log.info("force cache refresh");
     Long startTime = stage.getStartTime();
     if (startTime == null) {
       throw new IllegalStateException("Stage has no start time, cannot be executing.");
@@ -241,13 +246,28 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       Map<String, String> request =
           objectMapper.convertValue(manifest, new TypeReference<Map<String, String>>() {});
       try {
-        Response response = cacheService.forceCacheUpdate(provider, REFRESH_TYPE, request);
-        if (response.getStatus() == HTTP_OK) {
-          log.info("Refresh of {} succeeded immediately", manifest);
-          stageData.getProcessedManifests().add(manifest);
-        }
+        RetrySupport retry = new RetrySupport();
+        retry.retry(
+            () -> {
+              Response response = cacheService.forceCacheUpdate(provider, REFRESH_TYPE, request);
+              log.info("refresh cache for {}, result", manifest.getAccount(), response.getStatus());
+              if (response.getStatus() == HTTP_OK) {
+                stageData.getProcessedManifests().add(manifest);
+              } else if (response.getStatus() == HTTP_ACCEPTED) {
+                // clouddriver 还有 caching agent 正在执行，稍后重试
+                throw new AcceptPendingException();
+              }
+              return null;
+            },
+            5,
+            Duration.ofSeconds(2),
+            false);
 
         stageData.getRefreshedManifests().add(manifest);
+      } catch (AcceptPendingException e) {
+        // do nothing, we expected that
+        log.error("重试多次 刷新缓存失败");
+        stageData.errors.add("重试多次 刷新缓存失败");
       } catch (Exception e) {
         log.warn("Failed to refresh {}: ", manifest, e);
         stageData.errors.add(e.getMessage());
