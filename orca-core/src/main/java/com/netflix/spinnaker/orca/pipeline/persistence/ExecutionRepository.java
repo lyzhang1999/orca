@@ -79,7 +79,7 @@ public interface ExecutionRepository {
   Observable<Execution> retrievePipelinesForPipelineConfigId(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria);
 
-  default int retrievePipelinesForPipelineConfigIdCount(
+  default int retrievePipelinesForPipelineConfigIdCounts(
       @Nonnull String pipelineConfigId, @Nonnull ExecutionCriteria criteria) {
     return 0;
   }
@@ -159,18 +159,29 @@ public interface ExecutionRepository {
     private int page;
     private Instant startTimeCutoff;
     private ExecutionComparator sortType;
-    private int offset = 0;
+    private long lastSyncTime;
+    private int offset;
 
-    public int getPageSize() {
-      return pageSize;
+    public long getLastSyncTime() {
+      return lastSyncTime;
+    }
+
+    public @Nonnull ExecutionCriteria setLastSyncTime(long lastSyncTime) {
+      this.lastSyncTime = lastSyncTime;
+      return this;
     }
 
     public int getOffset() {
       return offset;
     }
 
-    public void setOffset(int offset) {
+    public @Nonnull ExecutionCriteria setOffset(int offset) {
       this.offset = offset;
+      return this;
+    }
+
+    public int getPageSize() {
+      return pageSize;
     }
 
     public @Nonnull ExecutionCriteria setPageSize(int pageSize) {

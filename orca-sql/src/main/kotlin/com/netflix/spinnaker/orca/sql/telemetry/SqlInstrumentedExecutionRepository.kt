@@ -199,11 +199,11 @@ class SqlInstrumentedExecutionRepository(
     }
   }
 
-  override fun retrievePipelinesForPipelineConfigIdCount(
+  override fun retrievePipelinesForPipelineConfigIdCounts(
     pipelineConfigId: String,
     criteria: ExecutionCriteria
   ): Int {
-    return executionRepository.retrievePipelinesForPipelineConfigIdCount(pipelineConfigId, criteria)
+    return executionRepository.retrievePipelinesForPipelineConfigIdCounts(pipelineConfigId, criteria)
   }
 
   override fun retrieveByCorrelationId(executionType: Execution.ExecutionType, correlationId: String): Execution {

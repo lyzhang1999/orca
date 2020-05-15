@@ -87,7 +87,9 @@ import org.springframework.scheduling.annotation.EnableAsync
   GremlinConfiguration
 ])
 @ComponentScan([
-  "com.netflix.spinnaker.config", "com.netflix.spinnaker.plugin"
+  "com.netflix.spinnaker.config",
+  "com.netflix.spinnaker.plugin",
+  "com.netflix.spinnaker.orca.grpc"
 ])
 class Main extends SpinnakerApplication {
   static final Map<String, String> DEFAULT_PROPS = [

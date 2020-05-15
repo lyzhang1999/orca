@@ -1,0 +1,15 @@
+syntax = "proto3";
+package coding.core.cloud.provider;
+option java_generic_services = true;
+option java_package = "net.coding.cd.proto";
+option java_outer_classname = "PipelineProto";
+
+message DeletePipelineRequest {
+    string pipelineId = 1;
+}
+message Empty{
+
+}
+service GrpcPipelineService {
+    rpc deletePipeline (DeletePipelineRequest) returns (Empty);
+}
