@@ -39,6 +39,7 @@ import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import java.io.IOException;
 import java.nio.channels.AcceptPendingException;
 import java.time.Clock;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -257,13 +258,14 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
               return null;
             },
             5,
-            2000,
+            Duration.ofSeconds(2),
             false);
 
         stageData.getRefreshedManifests().add(manifest);
       } catch (AcceptPendingException e) {
         // do nothing, we expected that
         log.debug("重试多次 刷新缓存失败");
+        stageData.errors.add("重试多次 刷新缓存失败");
       } catch (Exception e) {
         log.warn("Failed to refresh {}: ", manifest, e);
         stageData.errors.add(e.getMessage());
