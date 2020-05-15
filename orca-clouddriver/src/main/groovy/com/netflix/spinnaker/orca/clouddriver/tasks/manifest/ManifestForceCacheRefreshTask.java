@@ -97,6 +97,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   @Override
   @Nonnull
   public TaskResult execute(@Nonnull Stage stage) {
+    log.info("force cache refresh");
     Long startTime = stage.getStartTime();
     if (startTime == null) {
       throw new IllegalStateException("Stage has no start time, cannot be executing.");
@@ -249,6 +250,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         retry.retry(
             () -> {
               Response response = cacheService.forceCacheUpdate(provider, REFRESH_TYPE, request);
+              log.info("refresh cache for {}, result", manifest.getAccount(), response.getStatus());
               if (response.getStatus() == HTTP_OK) {
                 stageData.getProcessedManifests().add(manifest);
               } else if (response.getStatus() == HTTP_ACCEPTED) {
@@ -264,7 +266,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
         stageData.getRefreshedManifests().add(manifest);
       } catch (AcceptPendingException e) {
         // do nothing, we expected that
-        log.debug("重试多次 刷新缓存失败");
+        log.error("重试多次 刷新缓存失败");
         stageData.errors.add("重试多次 刷新缓存失败");
       } catch (Exception e) {
         log.warn("Failed to refresh {}: ", manifest, e);
