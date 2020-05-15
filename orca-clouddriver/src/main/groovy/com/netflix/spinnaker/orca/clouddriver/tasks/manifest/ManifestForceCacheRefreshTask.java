@@ -63,7 +63,7 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
   @Getter private final long backoffPeriod = TimeUnit.SECONDS.toMillis(10);
   @Getter private final long timeout = TimeUnit.MINUTES.toMillis(15);
 
-  private final long autoSucceedAfterMs = TimeUnit.MINUTES.toMillis(12);
+  private final long autoSucceedAfterMs = TimeUnit.MINUTES.toMillis(5);
   private final Clock clock;
   private final Registry registry;
   private final CloudDriverCacheService cacheService;
