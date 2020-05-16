@@ -29,7 +29,7 @@ public class DelegatingCloudDriverCacheStatusService
   }
 
   @Override
-  public Collection<Map> pendingForceCacheUpdates(String cloudProvider, String type) {
-    return getService().pendingForceCacheUpdates(cloudProvider, type);
+  public Collection<Map> pendingForceCacheUpdates(String cloudProvider, String type, String accounts) {
+    return getService().pendingForceCacheUpdates(cloudProvider, type, accounts);
   }
 }

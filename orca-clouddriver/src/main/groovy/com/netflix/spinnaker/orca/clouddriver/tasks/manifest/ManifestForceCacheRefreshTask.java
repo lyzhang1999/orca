@@ -156,9 +156,10 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       return;
     }
 
+    List<String> manifestAccounts = manifestsToCheck.stream().map(it->it.account).collect(Collectors.toList());
     Collection<PendingRefresh> pendingRefreshes =
         objectMapper.convertValue(
-            cacheStatusService.pendingForceCacheUpdates(provider, REFRESH_TYPE),
+            cacheStatusService.pendingForceCacheUpdates(provider, REFRESH_TYPE, StringUtils.join(manifestAccounts,"::")),
             new TypeReference<Collection<PendingRefresh>>() {});
 
     for (ScopedManifest manifest : manifestsToCheck) {
