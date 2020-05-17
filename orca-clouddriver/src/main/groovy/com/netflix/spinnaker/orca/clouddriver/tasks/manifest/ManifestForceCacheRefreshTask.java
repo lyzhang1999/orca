@@ -156,10 +156,37 @@ public class ManifestForceCacheRefreshTask extends AbstractCloudProviderAwareTas
       return;
     }
 
-    List<String> manifestAccounts = manifestsToCheck.stream().map(it->it.account).collect(Collectors.toList());
+    // search key is like $kind:$account
+    List<String> searchKeys =
+        manifestsToCheck.stream()
+            .map(
+                manifest -> {
+                  // manifest.name is like "deployment nginx-deployment"
+                  String[] split = manifest.getName().split(" ");
+                  if (split.length != 2) {
+                    throw new IllegalArgumentException(
+                        "Expected a full resource name of the form <kind> <name>");
+                  }
+                  String kind = split[0];
+                  String name = split[1];
+                  // concat the ondemand search key here
+                  return String.format(
+                      "%s:%s:%s:%s",
+                      kind,
+                      manifest.getAccount(),
+                      Optional.ofNullable(manifest.getLocation()).orElse(""),
+                      name);
+                })
+            .collect(Collectors.toList());
+
+    // assume all manifest in this Task should had the same account
     Collection<PendingRefresh> pendingRefreshes =
         objectMapper.convertValue(
-            cacheStatusService.pendingForceCacheUpdates(provider, REFRESH_TYPE, StringUtils.join(manifestAccounts,"::")),
+            cacheStatusService.pendingForceCacheUpdates(
+                provider,
+                REFRESH_TYPE,
+                manifestsToCheck.get(0).account,
+                StringUtils.join(searchKeys, ":::")),
             new TypeReference<Collection<PendingRefresh>>() {});
 
     for (ScopedManifest manifest : manifestsToCheck) {
