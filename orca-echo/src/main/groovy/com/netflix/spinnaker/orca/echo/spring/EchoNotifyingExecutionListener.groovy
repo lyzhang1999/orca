@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.echo.EchoService
 import com.netflix.spinnaker.orca.front50.Front50Service
+import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.front50.model.ApplicationNotifications
 import com.netflix.spinnaker.orca.listeners.ExecutionListener
 import com.netflix.spinnaker.orca.listeners.Persister
@@ -27,6 +28,7 @@ import com.netflix.spinnaker.orca.pipeline.util.ContextParameterProcessor
 import com.netflix.spinnaker.security.AuthenticatedRequest
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
+import org.slf4j.MDC
 
 import static com.netflix.spinnaker.orca.pipeline.model.Execution.ExecutionType.PIPELINE
 
@@ -57,12 +59,25 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         if (execution.type == PIPELINE) {
           addApplicationNotifications(execution)
         }
+        String cloudProviders = ""
+        try {
+          MDC.put(AuthenticatedRequest.Header.EXECUTION_ID.header, execution.id)
+          MDC.put(AuthenticatedRequest.Header.USER.header, execution.authentication?.user ?: "anonymous")
+          Application application = front50Service.get(execution.application)
+          cloudProviders = application.cloudProviders
+          log.debug("application is {}", application)
+        } catch (Exception e ) {
+          log.warn("notify get application error {}", execution.application)
+        }
         AuthenticatedRequest.allowAnonymous({
+          Map<String, String> additionMap = new HashMap<String, String>()
+          additionMap.put("cloudProviders", cloudProviders)
           echoService.recordEvent(
             details: [
               source     : "orca",
               type       : "orca:${execution.type}:starting".toString(),
               application: execution.application,
+              attributes: additionMap,
             ],
             content: buildContent(execution)
           )
@@ -83,12 +98,25 @@ class EchoNotifyingExecutionListener implements ExecutionListener {
         if (execution.type == PIPELINE) {
           addApplicationNotifications(execution)
         }
+        String cloudProviders = ""
+        try {
+          MDC.put(AuthenticatedRequest.Header.EXECUTION_ID.header, execution.id)
+          MDC.put(AuthenticatedRequest.Header.USER.header, execution.authentication?.user ?: "anonymous")
+          Application application = front50Service.get(execution.application)
+          cloudProviders = application.cloudProviders
+          log.debug("application is {}", application)
+        } catch (Exception e ) {
+          log.warn("notify get application error {}", execution.application)
+        }
         AuthenticatedRequest.allowAnonymous({
+          Map<String, String> additionMap = new HashMap<String, String>()
+          additionMap.put("cloudProviders", cloudProviders)
           echoService.recordEvent(
             details: [
               source     : "orca",
               type       : "orca:${execution.type}:${wasSuccessful ? "complete" : "failed"}".toString(),
               application: execution.application,
+              attributes: additionMap,
             ],
             content: buildContent(execution)
           )
