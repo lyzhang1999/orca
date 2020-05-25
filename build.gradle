@@ -58,6 +58,17 @@ subprojects {
       }
     }
 
+    repositories {
+      jcenter()
+      maven {
+        credentials {
+          username "$codingArtifactsGradleUsername"
+          password "$codingArtifactsGradlePassword"
+        }
+        url "$codingArtifactsRepoUrl"
+      }
+    }
+
     dependencies {
       implementation(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
       annotationProcessor(platform("com.netflix.spinnaker.kork:kork-bom:$korkVersion"))
