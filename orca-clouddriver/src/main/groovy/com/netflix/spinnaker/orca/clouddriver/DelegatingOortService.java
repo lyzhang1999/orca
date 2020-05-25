@@ -67,6 +67,11 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
   }
 
   @Override
+  public Boolean deleteAppData(String app) {
+    return getService().deleteAppData(app);
+  }
+
+  @Override
   public Response getServerGroups(String app) {
     return getService().getServerGroups(app);
   }

@@ -16,6 +16,7 @@
 
 package com.netflix.spinnaker.orca.applications.pipelines
 
+import com.netflix.spinnaker.orca.applications.tasks.DeleteApplicationDataTask
 import com.netflix.spinnaker.orca.applications.tasks.DeleteApplicationTask
 import com.netflix.spinnaker.orca.applications.tasks.VerifyApplicationHasNoDependenciesTask
 import com.netflix.spinnaker.orca.pipeline.StageDefinitionBuilder
@@ -30,6 +31,7 @@ class DeleteApplicationStage implements StageDefinitionBuilder {
   @Override
   void taskGraph(Stage stage, TaskNode.Builder builder) {
     builder
+      .withTask("deleteApplicationData", DeleteApplicationDataTask)
       .withTask("verifyNoDependencies", VerifyApplicationHasNoDependenciesTask)
       .withTask("deleteApplication", DeleteApplicationTask)
   }

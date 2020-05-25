@@ -21,6 +21,7 @@ import com.netflix.spinnaker.kork.artifacts.model.Artifact
 import com.netflix.spinnaker.orca.clouddriver.model.Manifest
 import retrofit.client.Response
 import retrofit.http.Body
+import retrofit.http.DELETE
 import retrofit.http.GET
 import retrofit.http.PUT
 import retrofit.http.Path
@@ -36,6 +37,9 @@ interface OortService {
 
   @GET("/applications/{app}/serverGroups")
   Response getServerGroups(@Path("app") String app)
+
+  @DELETE("/applications/{app}")
+  Boolean deleteAppData(@Path("app") String app)
 
   @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}/serverGroups/{serverGroup}")
   Response getServerGroupFromCluster(@Path("app") String app,
