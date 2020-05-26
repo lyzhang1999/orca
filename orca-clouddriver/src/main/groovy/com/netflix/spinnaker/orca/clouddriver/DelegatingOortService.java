@@ -37,6 +37,12 @@ public class DelegatingOortService extends DelegatingClouddriverService<OortServ
   }
 
   @Override
+  public Response getCluster(
+      String user, String app, String account, String cluster, String cloudProvider) {
+    return getService().getCluster(user, app, account, cluster, cloudProvider);
+  }
+
+  @Override
   public Manifest getManifest(String account, String name, boolean includeEvents) {
     return getService().getManifest(account, name, includeEvents);
   }

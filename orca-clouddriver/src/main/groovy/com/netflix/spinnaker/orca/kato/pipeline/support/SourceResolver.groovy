@@ -85,9 +85,9 @@ class SourceResolver {
                                     asgName: targetServerGroups[0].name as String)
       }
     }
-
+    def user = stage.getExecution().getAuthentication().getUser()
     def existingAsgs = getExistingAsgs(
-      stageData.application, stageData.account, stageData.cluster, stageData.cloudProvider
+      user, stageData.application, stageData.account, stageData.cluster, stageData.cloudProvider
     )
 
     if (!existingAsgs) {
@@ -125,6 +125,20 @@ class SourceResolver {
   List<Map> getExistingAsgs(String app, String account, String cluster, String cloudProvider) throws RetrofitError, JsonParseException, JsonMappingException {
     try {
       def response = oortService.getCluster(app, account, cluster, cloudProvider)
+      def json = response.body.in().text
+      def map = mapper.readValue(json, Map)
+      (map.serverGroups as List<Map>).sort { it.createdTime }
+    } catch (RetrofitError re) {
+      if (re.kind == RetrofitError.Kind.HTTP && re.response.status == 404) {
+        return []
+      }
+      throw re
+    }
+  }
+
+  List<Map> getExistingAsgs(String user, String app, String account, String cluster, String cloudProvider) throws RetrofitError, JsonParseException, JsonMappingException {
+    try {
+      def response = oortService.getCluster(user, app, account, cluster, cloudProvider)
       def json = response.body.in().text
       def map = mapper.readValue(json, Map)
       (map.serverGroups as List<Map>).sort { it.createdTime }

@@ -41,7 +41,7 @@ class CompletedBakeTask implements Task {
     // This treatment of ami allows both the aws and gce bake results to be propagated.
     def results = [
       ami: bake.ami ?: bake.imageName,
-      imageId: bake.ami ?: bake.imageName,
+      imageId: bake.imageId ?: bake.imageName,
       artifacts: bake.artifact ? [bake.artifact] : []
     ]
     /**

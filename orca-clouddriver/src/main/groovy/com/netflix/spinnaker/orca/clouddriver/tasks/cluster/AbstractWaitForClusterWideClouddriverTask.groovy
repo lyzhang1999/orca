@@ -112,7 +112,8 @@ abstract class AbstractWaitForClusterWideClouddriverTask extends AbstractCloudPr
       return TaskResult.SUCCEEDED
     }
 
-    Optional<Map> cluster = oortHelper.getCluster(clusterSelection.getApplication(), clusterSelection.credentials, clusterSelection.cluster, clusterSelection.cloudProvider)
+    def user = stage.getExecution().getAuthentication().getUser()
+    Optional<Map> cluster = oortHelper.getCluster(user, clusterSelection.getApplication(), clusterSelection.credentials, clusterSelection.cluster, clusterSelection.cloudProvider)
     if (!cluster.isPresent()) {
       return missingClusterResult(stage, clusterSelection)
     }

@@ -23,6 +23,7 @@ import retrofit.client.Response
 import retrofit.http.Body
 import retrofit.http.DELETE
 import retrofit.http.GET
+import retrofit.http.Header
 import retrofit.http.PUT
 import retrofit.http.Path
 import retrofit.http.Query
@@ -31,6 +32,13 @@ import retrofit.http.QueryMap
 interface OortService {
   @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}")
   Response getCluster(@Path("app") String app,
+                      @Path("account") String account,
+                      @Path("cluster") String cluster,
+                      @Path("cloudProvider") String cloudProvider)
+
+  @GET("/applications/{app}/clusters/{account}/{cluster}/{cloudProvider}")
+  Response getCluster(@Header("X-SPINNAKER-USER") String user,
+                      @Path("app") String app,
                       @Path("account") String account,
                       @Path("cluster") String cluster,
                       @Path("cloudProvider") String cloudProvider)

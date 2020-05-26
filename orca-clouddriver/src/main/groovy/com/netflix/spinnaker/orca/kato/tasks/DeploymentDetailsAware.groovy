@@ -42,7 +42,7 @@ trait DeploymentDetailsAware {
           Stage stage,
           String targetRegion,
           String targetCloudProvider,
-          Consumer<Map> callback) {
+          Closure callback) {
     Stage previousStage = getPreviousStageWithImage(stage, targetRegion, targetCloudProvider)
     def result = [:]
     if (previousStage && isCloudProviderEqual(stage, previousStage)) {
@@ -105,7 +105,7 @@ trait DeploymentDetailsAware {
     Stage stage,
     String targetRegion,
     String targetCloudProvider,
-    Consumer<Map> callback) {
+    Closure callback) {
     def result = [:]
     def deploymentDetails = (stage.context.deploymentDetails ?: []) as List<Map>
 
