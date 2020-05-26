@@ -16,6 +16,8 @@
 
 package com.netflix.spinnaker.orca.web.config
 
+import com.netflix.spinnaker.orca.interceptor.ThreadCacheInterceptor
+
 import javax.servlet.*
 import javax.servlet.http.HttpServletResponse
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -43,6 +45,9 @@ class WebConfiguration extends WebMvcConfigurerAdapter {
   @Autowired
   Registry registry
 
+  @Autowired
+  ThreadCacheInterceptor threadCacheInterceptor
+
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
     registry.addInterceptor(
@@ -50,6 +55,7 @@ class WebConfiguration extends WebMvcConfigurerAdapter {
         this.registry, "controller.invocations", ["application"], ["BasicErrorController"]
       )
     )
+    registry.addInterceptor(threadCacheInterceptor)
   }
 
   @Bean(name = "objectMapper", autowire = Autowire.BY_TYPE) ObjectMapper orcaObjectMapper() {

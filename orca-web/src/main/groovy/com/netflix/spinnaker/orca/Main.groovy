@@ -89,7 +89,8 @@ import org.springframework.scheduling.annotation.EnableAsync
 @ComponentScan([
   "com.netflix.spinnaker.config",
   "com.netflix.spinnaker.plugin",
-  "com.netflix.spinnaker.orca.grpc"
+  "com.netflix.spinnaker.orca.grpc",
+  "com.netflix.spinnaker.orca.interceptor"
 ])
 class Main extends SpinnakerApplication {
   static final Map<String, String> DEFAULT_PROPS = [
