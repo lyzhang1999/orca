@@ -464,7 +464,7 @@ class OperationsController {
     }
 
     def json = objectMapper.writeValueAsString(config)
-    log.info('requested task:{}', json)
+    log.debug('requested task:{}', json)
     def pipeline = executionLauncher.start(ORCHESTRATION, json)
     [ref: "/tasks/${pipeline.id}".toString()]
   }
