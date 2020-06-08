@@ -91,6 +91,7 @@ public class CreateTcrTriggerTask implements RetryableTask {
   }
 
   private Map<String, Object> fetchExistingPipeline(Map<String, Object> newPipeline) {
+    // 这里是 pipeline 多个历史记录集合
     String applicationName = (String) newPipeline.get("application");
     String newPipelineID = (String) newPipeline.get("id");
     if (!StringUtils.isEmpty(newPipelineID)) {
@@ -167,7 +168,6 @@ public class CreateTcrTriggerTask implements RetryableTask {
     for (EchoService.TcrTrigger triggers : trigger) {
       Integer response = echoService.createTcrTrigger(userGK, triggers).getStatus();
       if (!response.equals(200)) {
-        // 只要有一个保存失败 pipeline 就整个失败
         status = false;
         log.info("create TCR Trigger Fail name {}", triggers.getName());
         break;

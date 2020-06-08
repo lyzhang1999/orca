@@ -50,6 +50,18 @@ interface EchoService {
   Response createTcrTrigger(@Header("X-SPINNAKER-USER") String userGK, @Body TcrTrigger triggerData)
 
 
+  // CCR TRIGGER
+  @DELETE("/ccr/{region}/{triggerName}/trigger")
+  Response deleteCcrTrigger(@Header("X-SPINNAKER-USER") String userGK, @Path("region") String region, @Path("triggerName") String triggerName)
+
+  // repoName 需要 base64 编码
+  @GET("/ccr/{region}/{repoName}/trigger")
+  List<Map<String, Object>> getCcrTriggerList(@Header("X-SPINNAKER-USER") String userGK, @Path("region") String region, @Path("repoName") String repoName)
+
+  @Headers("Content-type: application/json")
+  @POST("/ccr/trigger")
+  Response createCcrTrigger(@Header("X-SPINNAKER-USER") String userGK, @Body CcrTrigger triggerData)
+
   static class TcrTrigger {
     String userGK
     String region
@@ -61,6 +73,17 @@ interface EchoService {
     String description
     String condition
     String address
+  }
+
+  static class CcrTrigger {
+    String userGK
+    String region
+    String repoName
+    String triggerName
+    String invokeMethod
+    Integer clusterRegion
+    String invokeExpression
+    String endPoint
   }
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
