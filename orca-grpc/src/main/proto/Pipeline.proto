@@ -7,9 +7,18 @@ option java_outer_classname = "PipelineProto";
 message DeletePipelineRequest {
     string pipelineId = 1;
 }
-message Empty{
+message DeletePipelineConfigRequest {
+    string pipelineConfigId = 1;
+}
+message DeleteApplicationRequest {
+    int32 teamId = 1;
+    string application = 2;
+}
+message Empty {
 
 }
 service GrpcPipelineService {
     rpc deletePipeline (DeletePipelineRequest) returns (Empty);
+    rpc deletePipelineConfig (DeletePipelineConfigRequest) returns (Empty);
+    rpc deleteApplication (DeleteApplicationRequest) returns (Empty);
 }
