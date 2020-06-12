@@ -21,6 +21,7 @@ dependencies {
   implementation(project(":orca-clouddriver"))
   implementation(project(":orca-front50"))
   implementation(project(":orca-retrofit"))
+  implementation(project(":orca-grpc"))
   implementation("com.netflix.spinnaker.fiat:fiat-core:$fiatVersion")
 
   compileOnly("org.projectlombok:lombok")

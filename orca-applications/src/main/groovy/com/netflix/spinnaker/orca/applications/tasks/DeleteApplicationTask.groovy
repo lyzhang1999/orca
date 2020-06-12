@@ -20,13 +20,19 @@ import com.netflix.spinnaker.orca.ExecutionStatus
 import com.netflix.spinnaker.orca.TaskResult
 import com.netflix.spinnaker.orca.front50.model.Application
 import com.netflix.spinnaker.orca.front50.tasks.AbstractFront50Task
+import com.netflix.spinnaker.orca.grpc.client.CodingGrpcClient
 import groovy.util.logging.Slf4j
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 import retrofit.RetrofitError
 
 @Slf4j
 @Component
 class DeleteApplicationTask extends AbstractFront50Task {
+
+  @Autowired
+  private CodingGrpcClient codingGrpcClient
+
   @Override
   TaskResult performRequest(Application application) {
     Map<String, Object> outputs = [:]
@@ -36,6 +42,7 @@ class DeleteApplicationTask extends AbstractFront50Task {
       if (existingApplication) {
         outputs.previousState = existingApplication
         front50Service.delete(application.name)
+        deleteCodingCdPipeline(application.name)
         try {
           front50Service.deletePermission(application.name)
         } catch (RetrofitError re) {
@@ -54,6 +61,19 @@ class DeleteApplicationTask extends AbstractFront50Task {
       return TaskResult.builder(ExecutionStatus.TERMINAL).outputs(outputs).build()
     }
     return TaskResult.builder(ExecutionStatus.SUCCEEDED).outputs(outputs).build()
+  }
+
+  private void deleteCodingCdPipeline(String application) {
+    try {
+      String[] split = application.split("team")
+      if (split.length == 2) {
+        int teamId = Integer.parseInt(split[1])
+        application = split[0]
+        codingGrpcClient.deletePipelineByTeamIdAndApplication(teamId, application)
+      }
+    } catch (Exception e) {
+      log.error("同步删除发布单时失败，Exception ", e)
+    }
   }
 
   @Override
