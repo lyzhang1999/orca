@@ -21,6 +21,7 @@ import com.netflix.spinnaker.fiat.model.UserPermission;
 import com.netflix.spinnaker.fiat.model.resources.Role;
 import com.netflix.spinnaker.fiat.model.resources.ServiceAccount;
 import com.netflix.spinnaker.fiat.shared.FiatPermissionEvaluator;
+import com.netflix.spinnaker.fiat.shared.FiatService;
 import com.netflix.spinnaker.fiat.shared.FiatStatus;
 import com.netflix.spinnaker.orca.ExecutionStatus;
 import com.netflix.spinnaker.orca.RetryableTask;
@@ -60,6 +61,8 @@ public class SaveServiceAccountTask implements RetryableTask {
 
   @Autowired(required = false)
   private FiatPermissionEvaluator fiatPermissionEvaluator;
+
+  @Autowired private FiatService fiatService;
 
   @Override
   public long getBackoffPeriod() {
@@ -121,12 +124,12 @@ public class SaveServiceAccountTask implements RetryableTask {
     // Check if pipeline roles did not change, and skip updating a service account if so.
     String serviceAccountName = generateSvcAcctName(pipeline);
     if (!pipelineRolesChanged(serviceAccountName, roles)) {
+      fiatService.sync(roles);
       log.debug("Skipping managed service account creation/updatimg since roles have not changed.");
       return TaskResult.builder(ExecutionStatus.SUCCEEDED)
           .context(ImmutableMap.of("pipeline.serviceAccount", serviceAccountName))
           .build();
     }
-
     if (!isUserAuthorized(user, roles)) {
       // TODO: Push this to the output result so Deck can show it.
       log.warn("User {} is not authorized with all roles for pipeline", user);
