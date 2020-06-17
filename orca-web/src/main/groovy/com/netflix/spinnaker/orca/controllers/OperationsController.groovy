@@ -17,6 +17,7 @@
 package com.netflix.spinnaker.orca.controllers
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.netfilx.spinnaker.orca.coding.common.TeamHelper
 import com.netflix.spinnaker.fiat.model.UserPermission
 import com.netflix.spinnaker.fiat.model.resources.Role
 import com.netflix.spinnaker.fiat.shared.FiatService
@@ -24,6 +25,8 @@ import com.netflix.spinnaker.fiat.shared.FiatStatus
 import com.netflix.spinnaker.kork.exceptions.SpinnakerException
 import com.netflix.spinnaker.kork.web.exceptions.InvalidRequestException
 import com.netflix.spinnaker.kork.web.exceptions.ValidationException
+import com.netflix.spinnaker.orca.clouddriver.CloudDriverCacheService
+
 import com.netflix.spinnaker.orca.clouddriver.service.JobService
 import com.netflix.spinnaker.orca.exceptions.OperationFailedException
 import com.netflix.spinnaker.orca.extensionpoint.pipeline.ExecutionPreprocessor
@@ -104,6 +107,9 @@ class OperationsController {
   @Autowired(required = false)
   Front50Service front50Service
 
+  @Autowired
+  CloudDriverCacheService cloudDriverCacheService
+
   @RequestMapping(value = "/orchestrate", method = RequestMethod.POST)
   Map<String, Object> orchestrate(@RequestBody Map pipeline, HttpServletResponse response) {
     return planOrOrchestratePipeline(pipeline)
@@ -144,7 +150,7 @@ class OperationsController {
       throw new UnsupportedOperationException("Front50 is not enabled, no way to retrieve pipeline configs. Fix this by setting front50.enabled: true")
     }
 
-    List<Map> history = AuthenticatedRequest.allowAnonymous({front50Service.getPipelineHistory(pipelineConfigId, 1)})
+    List<Map> history = AuthenticatedRequest.allowAnonymous({ front50Service.getPipelineHistory(pipelineConfigId, 1) })
     if (history.isEmpty()) {
       throw new NotFoundException("Pipeline config $pipelineConfigId not found")
     }
@@ -163,7 +169,7 @@ class OperationsController {
 
   private Map<String, Object> planPipeline(Map pipeline, boolean resolveArtifacts) {
     log.info('Not starting pipeline (plan: true): {}', value("pipelineId", pipeline.id))
-    pipelineModelMutators.stream().filter({m -> m.supports(pipeline)}).forEach({m -> m.mutate(pipeline)})
+    pipelineModelMutators.stream().filter({ m -> m.supports(pipeline) }).forEach({ m -> m.mutate(pipeline) })
     return parseAndValidatePipeline(pipeline, resolveArtifacts)
   }
 
@@ -173,12 +179,13 @@ class OperationsController {
     Exception pipelineError = null
     try {
       pipeline = parseAndValidatePipeline(pipeline)
+      refreshScore(pipeline)
     } catch (Exception e) {
       pipelineError = e
     }
 
     def augmentedContext = [
-      trigger: pipeline.trigger,
+      trigger          : pipeline.trigger,
       templateVariables: pipeline.templateVariables ?: [:]
     ]
     def processedPipeline = contextParameterProcessor.process(pipeline, augmentedContext, false)
@@ -192,6 +199,18 @@ class OperationsController {
       def id = markPipelineFailed(processedPipeline, pipelineError)
       log.info("Failed to start pipeline {} based on request body {}", id, request)
       throw pipelineError
+    }
+  }
+
+  private void refreshScore(Map<String, Object> pipeline) {
+    try {
+      def application = pipeline.getOrDefault("application", null)
+      if (application != null) {
+        String teamId = TeamHelper.getTeamId(application as String) as String
+        cloudDriverCacheService.coldTurnedHot(teamId)
+      }
+    } catch (Exception e) {
+      log.error("refreshScore error,Exception : ", e)
     }
   }
 
@@ -209,7 +228,7 @@ class OperationsController {
     }
 
     def augmentedContext = [
-      trigger: pipeline.trigger,
+      trigger          : pipeline.trigger,
       templateVariables: pipeline.templateVariables ?: [:]
     ]
     def processedPipeline = contextParameterProcessor.process(pipeline, augmentedContext, false)
@@ -289,9 +308,9 @@ class OperationsController {
       }
 
       if (parentExecution) {
-        pipeline.trigger.isPipeline         = true
-        pipeline.trigger.parentStatus       = parentExecution.status
-        pipeline.trigger.parentExecution    = parentExecution
+        pipeline.trigger.isPipeline = true
+        pipeline.trigger.parentStatus = parentExecution.status
+        pipeline.trigger.parentExecution = parentExecution
         pipeline.trigger.parentPipelineName = parentExecution.name
 
         pipeline.receivedArtifacts = artifactResolver.getAllArtifacts(parentExecution)
@@ -395,14 +414,14 @@ class OperationsController {
     }
 
     return webhooks.collect {
-      [ label: it.label,
-        description: it.description,
-        type: it.type,
-        waitForCompletion: it.waitForCompletion,
-        preconfiguredProperties: it.preconfiguredProperties,
-        noUserConfigurableFields: it.noUserConfigurableFields(),
-        parameters: it.parameters,
-        parameterData: it.parameterData,
+      [label                   : it.label,
+       description             : it.description,
+       type                    : it.type,
+       waitForCompletion       : it.waitForCompletion,
+       preconfiguredProperties : it.preconfiguredProperties,
+       noUserConfigurableFields: it.noUserConfigurableFields(),
+       parameters              : it.parameters,
+       parameterData           : it.parameterData,
       ]
     }
   }
@@ -412,14 +431,14 @@ class OperationsController {
     if (!jobService) {
       return []
     }
-    return jobService?.getPreconfiguredStages().collect{
-      [ label: it.label,
-        description: it.description,
-        type: it.type,
-        waitForCompletion: it.waitForCompletion,
-        noUserConfigurableFields: true,
-        parameters: it.parameters,
-        producesArtifacts: it.producesArtifacts,
+    return jobService?.getPreconfiguredStages().collect {
+      [label                   : it.label,
+       description             : it.description,
+       type                    : it.type,
+       waitForCompletion       : it.waitForCompletion,
+       noUserConfigurableFields: true,
+       parameters              : it.parameters,
+       producesArtifacts       : it.producesArtifacts,
       ]
     }
   }

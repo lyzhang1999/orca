@@ -52,6 +52,7 @@ include "orca-api",
   "orca-validation",
   "orca-web",
   "orca-webhook",
+  "orca-coding-common",
   "orca-grpc"
 
 rootProject.name = "orca"

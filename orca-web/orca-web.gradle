@@ -57,6 +57,7 @@ dependencies {
   implementation(project(":orca-redis"))
   implementation(project(":orca-sql"))
   implementation(project(":orca-webhook"))
+  implementation(project(":orca-coding-common"))
   implementation(project(":orca-grpc"))
   implementation("com.netflix.spinnaker.kork:kork-exceptions")
   implementation("com.netflix.spinnaker.kork:kork-stackdriver")
