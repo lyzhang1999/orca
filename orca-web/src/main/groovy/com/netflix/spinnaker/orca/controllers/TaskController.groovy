@@ -153,16 +153,6 @@ class TaskController {
   @RequestMapping(value = "/tasks/{id}", method = RequestMethod.GET)
   OrchestrationViewModel getTask(@PathVariable String id) {
     Execution orchestration = executionRepository.retrieve(ORCHESTRATION, id)
-    if(orchestration.getStatus() == ExecutionStatus.SUCCEEDED) {
-      boolean hasPermission = fiatPermissionEvaluator.hasPermission(SecurityContextHolder.getContext().getAuthentication(),
-        orchestration.getApplication(),
-        'APPLICATION',
-        'READ')
-      if(!hasPermission) {
-        orchestration.setStatus(ExecutionStatus.RUNNING)
-        log.debug("==== task status changed from SUCCEEDED TO RUNNING ====")
-      }
-    }
     OrchestrationViewModel result = convert orchestration
     return result
   }
