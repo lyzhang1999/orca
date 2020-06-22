@@ -18,7 +18,9 @@ package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
 import static java.util.Collections.emptyList;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
 import com.netflix.spinnaker.orca.clouddriver.OortService;
@@ -171,13 +173,61 @@ public class KubernetesJobRunner implements JobRunner {
 
     if (rawManifests != null) {
       for (Artifact artifact : requiredArtifacts) {
-        rawManifests = rawManifests.replace(artifact.getName(), artifact.getReference());
+        rawManifests = yamlVersionReplace(rawManifests, artifact.getReference());
       }
       log.debug("YAML_CONTENT raw replace artifact\n{}", rawManifests);
       envItem.put("value", rawManifests);
     } else {
       log.error("YAML_CONTENT raw is empty");
     }
+  }
+
+  /**
+   * 为 yaml 文件中未写版本号的镜像填充版本号，已写版本号的同名镜像不做替换
+   *
+   * @param yamlStr 可包含多个资源的 yaml 格式字符串
+   * @param dockerImage 镜像版本，格式为（镜像全名:镜像版本）
+   * @return 替换版本后的 yaml 字符串
+   */
+  private String yamlVersionReplace(String yamlStr, String dockerImage) {
+    try {
+      Yaml yamlOjb = new Yaml();
+      if (dockerImage == null) {
+        return yamlStr;
+      }
+      if (!dockerImage.contains(":")) {
+        dockerImage += ":latest";
+      }
+      String[] split = dockerImage.split(":");
+      if (split.length != 2) {
+        throw new IllegalArgumentException();
+      }
+
+      String image = split[0];
+      StringBuilder yamlBuilder = new StringBuilder();
+      Iterable<Object> objects = yamlOjb.loadAll(yamlStr);
+      for (Object obj : objects) {
+        String json =
+            objectMapper
+                .writeValueAsString(obj)
+                .replaceAll("\"image\":\"" + image + "\"", "\"image\":\"" + dockerImage + "\"");
+        yamlBuilder.append(convertJsonToYaml(json));
+      }
+
+      String result = yamlBuilder.toString();
+      if (result.startsWith("---\n")) {
+        result = result.substring(4);
+      }
+      return result;
+    } catch (Exception e) {
+      log.error("版本替换异常，Exception {}\nyaml content:{}\ndockerImage: {}", e, yamlStr, dockerImage);
+      throw new IllegalArgumentException(e);
+    }
+  }
+
+  private String convertJsonToYaml(String json) throws Exception {
+    JsonNode jsonNodeTree = objectMapper.readTree(json);
+    return new YAMLMapper().writeValueAsString(jsonNodeTree);
   }
 
   public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
