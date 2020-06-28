@@ -16,46 +16,32 @@
 
 package com.netflix.spinnaker.orca.clouddriver.tasks.providers.kubernetes;
 
-import static java.util.Collections.emptyList;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
-import com.netflix.spinnaker.kork.artifacts.model.Artifact;
 import com.netflix.spinnaker.kork.core.RetrySupport;
-import com.netflix.spinnaker.orca.clouddriver.OortService;
 import com.netflix.spinnaker.orca.clouddriver.tasks.job.JobRunner;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestContext;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.ManifestEvaluator;
 import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RunJobManifestContext;
+import com.netflix.spinnaker.orca.clouddriver.tasks.manifest.RunJobYamlEnvEvaluator;
 import com.netflix.spinnaker.orca.pipeline.model.Stage;
 import com.netflix.spinnaker.orca.pipeline.util.ArtifactResolver;
-import io.micrometer.core.instrument.util.IOUtils;
-import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
-import retrofit.client.Response;
 
 @Component
 @Data
 @Slf4j
 public class KubernetesJobRunner implements JobRunner {
+
   private static final ThreadLocal<Yaml> yamlParser =
       ThreadLocal.withInitial(() -> new Yaml(new SafeConstructor()));
-
-  private static final String PREFIX_CUSTOM_ENV = "YAML_CONTENT";
-
-  @Autowired OortService oort;
 
   private final RetrySupport retrySupport = new RetrySupport();
 
@@ -65,14 +51,17 @@ public class KubernetesJobRunner implements JobRunner {
   private ArtifactResolver artifactResolver;
   private ObjectMapper objectMapper;
   private ManifestEvaluator manifestEvaluator;
+  private RunJobYamlEnvEvaluator runJobYamlEnvEvaluator;
 
   public KubernetesJobRunner(
       ArtifactResolver artifactResolver,
       ObjectMapper objectMapper,
-      ManifestEvaluator manifestEvaluator) {
+      ManifestEvaluator manifestEvaluator,
+      RunJobYamlEnvEvaluator runJobYamlEnvEvaluator) {
     this.artifactResolver = artifactResolver;
     this.objectMapper = objectMapper;
     this.manifestEvaluator = manifestEvaluator;
+    this.runJobYamlEnvEvaluator = runJobYamlEnvEvaluator;
   }
 
   public List<Map> getOperations(Stage stage) {
@@ -100,7 +89,7 @@ public class KubernetesJobRunner implements JobRunner {
     }
 
     try {
-      replaceEnvArtifacts(stage);
+      runJobYamlEnvEvaluator.replaceEnvArtifacts(stage);
     } catch (Exception e) {
       log.warn("replaceEnvArtifacts fail", e);
     }
@@ -110,124 +99,6 @@ public class KubernetesJobRunner implements JobRunner {
     Map<String, Object> task = new HashMap<>();
     task.put(OPERATION, operation);
     return Collections.singletonList(task);
-  }
-
-  @SuppressWarnings("unchecked")
-  private void replaceEnvArtifacts(Stage stage) {
-    RunJobManifestContext runJobManifestContext = stage.mapTo(RunJobManifestContext.class);
-
-    List<Map<String, Object>> containers =
-        Optional.of(stage.getContext())
-            .map(o -> (Map<String, Object>) o.get("manifest"))
-            .map(o -> (Map<String, Object>) o.get("spec"))
-            .map(o -> (Map<String, Object>) o.get("template"))
-            .map(o -> (Map<String, Object>) o.get("spec"))
-            .map(o -> (List<Map<String, Object>>) o.get("containers"))
-            .orElse(emptyList());
-
-    List<Artifact> requiredArtifacts = new ArrayList<>();
-    List<String> artifactIds =
-        Optional.ofNullable(runJobManifestContext.getRequiredArtifactIds()).orElse(emptyList());
-    for (String id : artifactIds) {
-      Artifact requiredArtifact = artifactResolver.getBoundArtifactForId(stage, id);
-      if (requiredArtifact == null) {
-        throw new IllegalStateException(
-            "No artifact with id '" + id + "' could be found in the pipeline context.");
-      }
-
-      requiredArtifacts.add(requiredArtifact);
-    }
-
-    for (Map<String, Object> container : containers) {
-      List<Map<String, Object>> envs =
-          (List<Map<String, Object>>) Optional.ofNullable(container.get("env")).orElse(emptyList());
-      for (Map<String, Object> env : envs) {
-        String key = (String) env.get("name");
-        if (key != null && key.startsWith(PREFIX_CUSTOM_ENV)) {
-          injectContent(env, requiredArtifacts);
-        }
-      }
-    }
-  }
-
-  private void injectContent(Map<String, Object> envItem, List<Artifact> requiredArtifacts) {
-    Artifact manifestArtifact = objectMapper.convertValue(envItem.get("value"), Artifact.class);
-    String rawManifests =
-        retrySupport.retry(
-            () -> {
-              try {
-                Response manifestText = oort.fetchArtifact(manifestArtifact);
-                if (manifestText.getStatus() == 200) {
-                  return IOUtils.toString(manifestText.getBody().in());
-                }
-                throw new IllegalStateException(
-                    String.format("fetchArtifact error: %s", manifestText.getStatus()));
-              } catch (Exception e) {
-                throw new IllegalStateException(e);
-              }
-            },
-            10,
-            Duration.ofMillis(200),
-            true); // retry 10x, starting at .2s intervals);
-    log.debug("YAML_CONTENT raw\n{}", rawManifests);
-
-    if (rawManifests != null) {
-      for (Artifact artifact : requiredArtifacts) {
-        rawManifests = yamlVersionReplace(rawManifests, artifact.getReference());
-      }
-      log.debug("YAML_CONTENT raw replace artifact\n{}", rawManifests);
-      envItem.put("value", rawManifests);
-    } else {
-      log.error("YAML_CONTENT raw is empty");
-    }
-  }
-
-  /**
-   * 为 yaml 文件中未写版本号的镜像填充版本号，已写版本号的同名镜像不做替换
-   *
-   * @param yamlStr 可包含多个资源的 yaml 格式字符串
-   * @param dockerImage 镜像版本，格式为（镜像全名:镜像版本）
-   * @return 替换版本后的 yaml 字符串
-   */
-  private String yamlVersionReplace(String yamlStr, String dockerImage) {
-    try {
-      Yaml yamlOjb = new Yaml();
-      if (dockerImage == null) {
-        return yamlStr;
-      }
-      if (!dockerImage.contains(":")) {
-        dockerImage += ":latest";
-      }
-      String[] split = dockerImage.split(":");
-      if (split.length != 2) {
-        throw new IllegalArgumentException();
-      }
-
-      String image = split[0];
-      StringBuilder yamlBuilder = new StringBuilder();
-      Iterable<Object> objects = yamlOjb.loadAll(yamlStr);
-      for (Object obj : objects) {
-        String json =
-            objectMapper
-                .writeValueAsString(obj)
-                .replaceAll("\"image\":\"" + image + "\"", "\"image\":\"" + dockerImage + "\"");
-        yamlBuilder.append(convertJsonToYaml(json));
-      }
-
-      String result = yamlBuilder.toString();
-      if (result.startsWith("---\n")) {
-        result = result.substring(4);
-      }
-      return result;
-    } catch (Exception e) {
-      log.error("版本替换异常，Exception {}\nyaml content:{}\ndockerImage: {}", e, yamlStr, dockerImage);
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  private String convertJsonToYaml(String json) throws Exception {
-    JsonNode jsonNodeTree = objectMapper.readTree(json);
-    return new YAMLMapper().writeValueAsString(jsonNodeTree);
   }
 
   public Map<String, Object> getAdditionalOutputs(Stage stage, List<Map> operations) {
