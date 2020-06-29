@@ -19,6 +19,17 @@ protobuf {
   generatedFilesBaseDir = "$projectDir/src/generated"
 }
 
+idea {
+  module {
+    sourceDirs += file("src/main/proto")
+    sourceDirs += file("src/generated/main/java")
+    sourceDirs += file("src/generated/main/grpc")
+    generatedSourceDirs += file("src/generated/main/java")
+    generatedSourceDirs += file("src/generated/main/grpc")
+  }
+}
+
+
 dependencies {
   implementation "io.grpc:grpc-protobuf:1.25.0"
   implementation "io.grpc:grpc-stub:1.25.0"

@@ -1,0 +1,26 @@
+syntax = "proto3";
+package coding.core.cloud.provider;
+option java_generic_services = true;
+option java_package = "net.coding.cd.proto";
+option java_outer_classname = "ApplicationProto";
+
+message GetApplicationRequest {
+    string teamGk = 1;
+    string applicationName = 2;
+}
+
+message GetApplicationResponse {
+    repeated Application application = 1;
+}
+
+message Application {
+    bool bindApplication = 1;
+    string bindApplicationAt = 2;
+    int32 id = 3;
+    string name = 4; //注意这个 name 是 URL 里面的 key
+    int32 teamOwnerId = 5;
+}
+
+service GrpcApplicationService {
+    rpc getApplication (GetApplicationRequest) returns (GetApplicationResponse);
+}

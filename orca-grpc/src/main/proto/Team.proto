@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+import "User.proto";
+
+package app.grpc.enterprise;
+
+option java_generic_services = true;
+option java_package = "net.coding.e.proto";
+option java_outer_classname = "TeamProto";
+
+message Team {
+    int32 id = 1;
+    User owner = 2;
+    int64 created_at = 3;
+    int64 updated_at = 4;
+    int64 deleted_at = 5;
+    string name = 6;
+    string name_pinyin = 7;
+    string introduction = 8;
+    string avatar = 9;
+    int32 current_user_role_id = 10;
+    string current_user_role = 11;
+    string path = 12;
+    string html_link = 13;
+    string global_key = 14;
+    int64 member_count = 15;
+    int64 project_count = 16;
+    int64 staff_count = 17;
+    int64 manager_count = 18;
+    int64 member_without_2fa_count = 19;
+    bool lock = 20;
+    bool admin_loacked = 21;
+    bool force_twofa_enabled = 22;
+    string password_length = 23;
+    string password_composition = 24;
+    int32 pwd_max_retry = 25;
+    bool manager_force_twofa_enabled = 26;
+    bool staff_force_twofa_enabled = 27;
+    int64 manager_member_without_2fa_count = 28;
+    int64 staff_member_without_2fa_count = 29;
+}
+
+message TeamRequest {
+    string global_key = 1;
+    int32 team_id = 2;
+    int32 projectId = 3;
+}
+
+message TeamResponse {
+    int32 code = 1;
+    string msg = 2;
+    Team data = 3;
+}
+
+//暂时没用，成员已放入团队信息中
+message TeamMemberRequest {
+    int32 team_id = 1;
+}
+
+message TeamMemberResponse {
+    int32 code = 1;
+    string msg = 2;
+    repeated User data = 3;
+}
+
+message ImportOrgUntMemberToTeamRequest {
+    int32 teamId = 1;
+    repeated int32 orgUnitIds = 2;
+}
+
+message ImportOrgUntMemberToTeamRespone {
+    int32 code = 1;
+    int32 totalNum = 2;
+}
+
+message TeamHostWithProtocolResponse {
+    string teamHostWithProtocol = 1;
+}
+
+service TeamService {
+    rpc getTeamByGlobalKey (TeamRequest) returns (TeamResponse);
+    rpc getTeamByTeamId (TeamRequest) returns (TeamResponse);
+    rpc getMembers (TeamMemberRequest) returns (TeamMemberResponse);
+    rpc importOrgUntMemberToTeam (ImportOrgUntMemberToTeamRequest) returns (ImportOrgUntMemberToTeamRespone);
+    rpc getTeamByProjectId (TeamRequest) returns (TeamResponse);
+    rpc getTeamHostWithProtocol (TeamRequest) returns (TeamHostWithProtocolResponse);
+}

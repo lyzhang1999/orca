@@ -12,6 +12,9 @@ cd:
     grpc:
       host: ${cd_coding_grpc_host:localhost}
       port: ${cd_coding_grpc_port:28888}
+    ecoding:
+      host: ${cd_coding_grpc_host:localhost}
+      port: ${cd_coding_grpc_port:20153}
 
 # halconfig
 

@@ -19,6 +19,10 @@ package com.netflix.spinnaker.orca.echo.pipeline
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.spinnaker.orca.front50.Front50Service
 import com.netflix.spinnaker.orca.front50.model.Application
+import com.netflix.spinnaker.orca.grpc.client.CodingGrpcClient
+import com.netflix.spinnaker.orca.grpc.client.ECodingGrpcClient
+import net.coding.cd.proto.ApplicationProto
+import net.coding.e.proto.TeamProto
 
 import java.util.concurrent.TimeUnit
 import com.google.common.annotations.VisibleForTesting
@@ -31,6 +35,7 @@ import com.netflix.spinnaker.security.User
 import groovy.util.logging.Slf4j
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
+import com.netfilx.spinnaker.orca.coding.common.TeamHelper
 
 @Component
 class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage {
@@ -77,6 +82,12 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
     @Autowired
     ObjectMapper objectMapper
 
+    @Autowired
+    CodingGrpcClient codingGrpcClient
+
+    @Autowired
+    ECodingGrpcClient ecodingGrpcClient
+
     @Override
     TaskResult execute(Stage stage) {
       StageData stageData = stage.mapTo(StageData)
@@ -99,8 +110,77 @@ class ManualJudgmentStage implements StageDefinitionBuilder, AuthenticatedStage 
       }
 
       Map outputs = processNotifications(stage, stageData, notificationState)
+      // coding-cd 注入人工确认消息
+      try {
+        insertOrUpdateManualJudge(stage, stageData, notificationState)
+      } catch(Exception e) {
+        log.warn("insertOrUpdateManualJudge error {}", e)
+      }
 
       return TaskResult.builder(executionStatus).context(outputs).build()
+    }
+
+    private static enum STATUS {
+      RUNNING(0),
+      SUCCEEDED(1),
+      TERMINAL(2)
+    }
+
+    void insertOrUpdateManualJudge(Stage stage, StageData stageData, executionStatus) {
+      /**
+       * string stageId = stage.id
+       string pipelineId = stage.execution.id
+       string pipelineConfigId = stage.execution.pipelineConfigId
+       string pipelineConfigName = stage.execution.name
+       string application = stage.execution.application(team 前面);
+       int32 teamId = stage.execution.application(team 后面);
+       int64 createTime = stage.execution.startTime
+       string linkUrl = 跳转到详情页的 URL;
+       string userGKs = stage.execution.stages[0].context.codingJudgmentUsers -> {ArrayList@14239}.global_key
+       string userAvatars = GRPC 取
+       int32 status =  // 人工确认状态，0 待确认，1 已确认，2 取消   executionStatus 上面的注释
+       * */
+      String applicationName = TeamHelper.getTargetSuffix(stage.execution.application)
+      Integer teamId = TeamHelper.getTeamId(stage.execution.application)
+      Map<String, Object> manualJudge = new HashMap<>()
+      manualJudge.put("stageId", stage.id)
+      manualJudge.put("pipelineId", stage.execution.id)
+      manualJudge.put("pipelineConfigId", stage.execution.pipelineConfigId)
+      manualJudge.put("pipelineConfigName", stage.execution.name)
+      manualJudge.put("application", applicationName)
+      manualJudge.put("teamId", teamId)
+      manualJudge.put("createTime", stage.execution.startTime)
+      manualJudge.put("linkUrl", getProjectUrl(teamId, applicationName, stage.execution.id))
+      manualJudge.put("userGKs", "")
+      manualJudge.put("userAvatars", "")
+      manualJudge.put("status", STATUS.valueOf(executionStatus))
+    }
+
+    String getProjectUrl(Integer teamId, String pureApplicationName, String executionId) {
+      String applicationCloudProviders = "kubernetes"
+      try {
+        Application application = front50Service.get(TeamHelper.withSuffix(teamId, pureApplicationName))
+        applicationCloudProviders = String.valueOf(application.cloudProviders) == "tencent" ? "tencent" : "kubernetes"
+        log.debug("cloudProviders is {}", applicationCloudProviders)
+      } catch (Exception e ) {
+        log.warn("{} getProjectUrl error {}", TeamHelper.withSuffix(teamId, pureApplicationName), e)
+      }
+      String manualJudgeUrl = ""
+      try {
+        TeamProto.Team team = ecodingGrpcClient.getTeamByTeamId(teamId)
+        if (team.getGlobalKey().equals("")) throw new Exception("teamGk ${teamId} can not find")
+        String codingProjectUrl = "https://" + team.getGlobalKey() + ".coding.net"
+        List<ApplicationProto.Application> applicationList = codingGrpcClient.getCodingApplication(team.getGlobalKey(), pureApplicationName)
+        ApplicationProto.Application codingApplication = applicationList.stream().filter({ s -> s.getBindApplication().equals(true) }).findFirst().orElse(null)
+        if (codingApplication == null) throw new Exception("spinnaker application not bind project, ignore")
+        manualJudgeUrl = codingProjectUrl + "/p/" + codingApplication.getName() + "/cd-spin/delivery/" + applicationCloudProviders + "/flow/detail/" + executionId
+      } catch(Exception e) {
+        log.warn("Error {} get applicationList for {} {}", e.getMessage(), teamId, pureApplicationName)
+      }
+      if (manualJudgeUrl.equals("")) {
+        return "#"
+      }
+      return manualJudgeUrl
     }
 
     Map processNotifications(Stage stage, StageData stageData, String notificationState) {

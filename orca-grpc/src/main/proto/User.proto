@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package app.grpc.enterprise;
+
+option java_generic_services = true;
+option java_package = "net.coding.e.proto";
+option java_outer_classname = "UserProto";
+
+// deprecated, pls use CodingUser instead
+message User {
+    int32 id = 1;
+    int64 created_at = 2;
+    int64 updated_at = 3;
+    int64 last_logined_at = 4;
+    int32 status = 5;
+    int32 role = 6;
+    string email = 7;
+    string global_key = 8;
+    string avatar = 9;
+    string gravatar = 10;
+    string name = 11;
+    string name_pinyin = 12;
+    int32 sex = 13;
+    string phone = 14;
+    int64 birthday = 15;
+    string location = 16;
+    string company = 17;
+    string slogan = 18;
+    string introduction = 19;
+    int32 job = 20;
+    string ip = 21;
+    double points_left = 22;
+    double points_total = 23;
+    double balance = 24;
+    int32 phone_validation = 25;
+    string password = 26;
+    int32 email_validation = 27;
+    string phone_country_code = 28;
+    string country = 29;
+    int32 team_id = 30;
+}
+
+// deprecated, pls use CodingUser instead
+message UserSimple {
+    int32 id = 1;
+    int32 status = 2;
+    string global_key = 3;
+    string avatar = 4;
+    string name = 5;
+    string email = 6;
+}
+
+message GetUserByIdRequest {
+    int32 user_id = 1;
+}
+
+message GetUserByGkRequest {
+    string global_key = 1;
+}
+
+message RefrushOaUserInfoRequest {
+
+}
+
+message RefrushOaUserInfoResponse {
+    int32 size = 1;
+}
+
+service UserService {
+    rpc getById (GetUserByIdRequest) returns (User);
+    rpc getByGK (GetUserByGkRequest) returns (User);
+    rpc refrushOaUserInfo (RefrushOaUserInfoRequest) returns (RefrushOaUserInfoResponse);
+}

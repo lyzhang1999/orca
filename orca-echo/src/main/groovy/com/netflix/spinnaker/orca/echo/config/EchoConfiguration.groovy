@@ -46,7 +46,11 @@ import static retrofit.Endpoints.newFixedEndpoint
 @Configuration
 @Import([RetrofitConfiguration])
 @ConditionalOnExpression('${echo.enabled:true}')
-@ComponentScan("com.netflix.spinnaker.orca.echo")
+@ComponentScan([
+  "com.netflix.spinnaker.orca.echo",
+  "com.netflix.spinnaker.orca.grpc",
+  "net.coding.e.grpc"
+])
 @CompileStatic
 class EchoConfiguration {
 

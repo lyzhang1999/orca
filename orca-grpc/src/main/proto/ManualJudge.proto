@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package coding.core.cloud.provider;
+
+option java_generic_services = true;
+option java_package = "net.coding.cd.proto";
+option java_outer_classname = "ManualJudge";
+
+message manualJudgeRequest {
+  string stageId = 1; // 人工确认的 stageID，注意这个字段要做 unique 唯一标识，因为 spinnaker 里面不知道这个人工确认是否已经注入到了 coding-cd ，所以每次收到事件之后就会请求 coding-cd 新增人工确认记录，coding-cd 插入人工确认记录之前，先检查是否已经有了这条 ID 的人工确认记录，如果没有，才能插入
+  string pipelineId = 2;
+  string pipelineConfigId = 3;
+  string pipelineConfigName = 4;
+  string application = 5;
+  int32 teamId = 6;
+  int64 createTime = 7;
+  string linkUrl = 8;
+  string userGKs = 9; // 人工确认人的 ID 集合，英文逗号分隔，可不传
+  string userAvatars = 10; // 人工确认人的头像集合，英文逗号分隔，可不传
+  int32 status = 11; // 人工确认状态，0 待确认，1 已确认，2 取消
+}
+
+message manualJudgeResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+service GrpcManualJudgeService {
+  rpc insertOrUpdateManualJudge (manualJudgeRequest) returns (manualJudgeResponse);
+}
